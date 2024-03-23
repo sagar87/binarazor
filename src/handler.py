@@ -1,6 +1,13 @@
-import streamlit as st
 import numpy as np
-from database import get_channel_names, get_sample_expression, get_threshold, get_status
+import streamlit as st
+
+from database import (
+    get_channel_names,
+    get_sample_expression,
+    get_status,
+    get_threshold,
+    update_status,
+)
 from drive import get_data, get_image_dict
 from utils import format_sample
 
@@ -50,8 +57,10 @@ def handle_sample_select():
             format_sample(st.session_state.selected_sample),
             prefix=True if not st.session_state.image_controls else False,
         )
-    
-        st.session_state.slider_value = get_threshold(sample, st.session_state.primary_channel)
+
+        st.session_state.slider_value = get_threshold(
+            sample, st.session_state.primary_channel
+        )
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
 
 
@@ -103,7 +112,9 @@ def handle_next_channel():
         st.session_state.data = get_sample_expression(
             sample, channel, st.session_state.secondary_channel
         )
-        st.session_state.slider_value = get_threshold(sample, st.session_state.primary_channel)
+        st.session_state.slider_value = get_threshold(
+            sample, st.session_state.primary_channel
+        )
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
         st.toast(f"Switched to {channel}. {'Last channel' if last_channel else ''}")
 
@@ -122,7 +133,9 @@ def handle_previous_channel():
         st.session_state.data = get_sample_expression(
             sample, channel, st.session_state.secondary_channel
         )
-        st.session_state.slider_value = get_threshold(sample, st.session_state.primary_channel)
+        st.session_state.slider_value = get_threshold(
+            sample, st.session_state.primary_channel
+        )
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
         st.toast(f"Switched to {channel}. {'Last channel' if first_channel else ''} ")
 
@@ -135,7 +148,9 @@ def handle_primary_channel_select():
     st.session_state.data = get_sample_expression(
         sample, st.session_state.primary_channel, st.session_state.secondary_channel
     )
-    st.session_state.slider_value = get_threshold(sample, st.session_state.primary_channel)
+    st.session_state.slider_value = get_threshold(
+        sample, st.session_state.primary_channel
+    )
     st.session_state.status = get_status(sample, st.session_state.primary_channel)
 
 
@@ -160,10 +175,21 @@ def handle_slider(kl, kh, new_l, new_h):
     # np.mean(s.to_numpy() <= q)
 
 
-
 def increment_value():
     st.session_state.slider_value += 0.1
 
 
 def decrement_value():
     st.session_state.slider_value -= 0.1
+
+
+def handle_update_threshold():
+    st.session_state.status = "reviewed"
+    update_status(
+        format_sample(st.session_state.selected_sample),
+        st.session_state.primary_channel,
+    )
+
+
+def handle_bad_channel():
+    st.session_state.status = "bad"

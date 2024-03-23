@@ -1,16 +1,17 @@
+from math import isnan
+
 import cv2
 import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
-from math import isnan
-st.set_page_config(
-    page_title="Manual GATOR Viewer", page_icon=":bar_chart:", layout="wide"
-)
+
+st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide")
 
 from database import get_reviewers
 from drive import get_image, get_samples
 from handler import (
     decrement_value,
+    handle_bad_channel,
     handle_image_controls,
     handle_next_channel,
     handle_next_sample,
@@ -20,6 +21,7 @@ from handler import (
     handle_sample_select,
     handle_secondary_channel_select,
     handle_slider,
+    handle_update_threshold,
     increment_value,
 )
 from plots import plot_hist, plotly_scatter_gl, plotly_scatter_marker_gl
@@ -75,29 +77,29 @@ if "downscale_options" not in st.session_state:
     st.session_state.downscale_options = [1, 2, 4, 8, 16]
 
 if "downscale" not in st.session_state:
-    st.session_state.downscale = 8
+    st.session_state.downscale = 1
 
 if "lower_quantile" not in st.session_state:
-    st.session_state.lower_quantile = .03
+    st.session_state.lower_quantile = 0.03
 
 if "upper_quantile" not in st.session_state:
-    st.session_state.upper_quantile = .998
+    st.session_state.upper_quantile = 0.998
 
 if "status" not in st.session_state:
     st.session_state.status = None
 
 with st.container():
     if st.session_state.data is not None and st.session_state.slider_value is not None:
-        if st.session_state.status is None or isnan(st.session_state.status):
-            icon =  ':question:'
-        elif st.session_state.status == -1:
-            icon = ':x:'
+        if st.session_state.status == "not reviewed":
+            icon = ":question:"
+        elif st.session_state.status == "bad":
+            icon = ":x:"
         else:
-            icon = ':white_check_mark:' 
+            icon = ":white_check_mark:"
         st.header(
             f"{format_sample(st.session_state.selected_sample)} | {st.session_state.primary_channel} | {icon}"
         )
-        
+
         # st.dataframe(st.session_state.data)
 
         with st.container(border=True):
@@ -112,7 +114,9 @@ with st.container():
                 ccol_4,
                 ccol_5,
                 ccol_6,
-            ) = st.columns(6)
+                ccol_7,
+                ccol_8,
+            ) = st.columns(8)
 
             with ccol_1:
                 st.button(
@@ -159,7 +163,13 @@ with st.container():
 
             with ccol_6:
                 st.button("Decrement value", on_click=decrement_value)
-    
+
+            with ccol_7:
+                st.button("Update Threshold", on_click=handle_update_threshold)
+
+            with ccol_8:
+                st.button("Mark as bad", on_click=handle_bad_channel)
+
         with st.container(border=True):
             slider_col1, slider_col2 = st.columns(2)
             with slider_col1:
@@ -313,7 +323,7 @@ with st.sidebar:
                     format="%.3f",
                     max_value=st.session_state.upper_quantile,
                     min_value=0.0,
-                    step=.05,
+                    step=0.05,
                 )
                 st.write(st.session_state.lower_quantile)
             with percentile_col2:
@@ -324,7 +334,7 @@ with st.sidebar:
                     format="%.3f",
                     min_value=st.session_state.lower_quantile,
                     max_value=1.0,
-                    step=.05,
+                    step=0.05,
                 )
                 st.write(st.session_state.upper_quantile)
 
