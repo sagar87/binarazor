@@ -193,3 +193,7 @@ def handle_update_threshold():
 
 def handle_bad_channel():
     st.session_state.status = "bad"
+    update_status(
+        format_sample(st.session_state.selected_sample),
+        st.session_state.primary_channel,
+    )

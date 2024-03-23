@@ -58,6 +58,9 @@ if "primary_channel" not in st.session_state:
 if "primary_channel_index" not in st.session_state:
     st.session_state.primary_channel_index = None
 
+if "fix_primary_channel" not in st.session_state:
+    st.session_state.fix_primary_channel = False
+
 if "secondary_channel" not in st.session_state:
     st.session_state.secondary_channel = None
 
@@ -123,7 +126,7 @@ with st.container():
                     "Prev Channel",
                     on_click=handle_previous_channel,
                     disabled=True
-                    if (st.session_state.primary_channel_index == 0)
+                    if (st.session_state.primary_channel_index == 0) or st.session_state.fix_primary_channel
                     else False,
                 )
 
@@ -134,7 +137,7 @@ with st.container():
                     disabled=True
                     if (
                         st.session_state.primary_channel_index
-                        == (len(st.session_state.channels) - 1)
+                        == (len(st.session_state.channels) - 1) or st.session_state.fix_primary_channel
                     )
                     else False,
                 )
@@ -180,6 +183,7 @@ with st.container():
                     value=2.0,
                     step=0.05,
                     key="slider_value",
+                    disabled=True if st.session_state.status == 'bad' else False
                 )
             with slider_col2:
                 if st.session_state.image_controls:
@@ -287,7 +291,12 @@ with st.sidebar:
             # format_func=format_graph,
             on_change=handle_primary_channel_select,
             placeholder="Primary Channel",
+            disabled=st.session_state.fix_primary_channel
         )
+        
+        st.toggle("Fix primary channel", key='fix_primary_channel')
+        st.write("Primary channel fixed", st.session_state.fix_primary_channel)
+        
         sub_option = st.selectbox(
             "Select Secondary channel",
             st.session_state.channels,
