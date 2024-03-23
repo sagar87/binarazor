@@ -1,0 +1,46 @@
+<script>
+  const streamlitDoc = window.parent.document;
+
+  const buttons = Array.from(
+    streamlitDoc.querySelectorAll(".stButton > button")
+  );
+  console.log(buttons); // find buttons in console tab
+
+  const left_button = buttons.find((el) => el.innerText === "Prev Channel");
+  const right_button = buttons.find((el) => el.innerText === "Next Channel");
+  const down_button = buttons.find((el) => el.innerText === "Next graph");
+  const up_button = buttons.find((el) => el.innerText === "Prev graph");
+  const select_button = buttons.find(
+    (el) => el.innerText === "Decrement value"
+  );
+  const deselect_button = buttons.find(
+    (el) => el.innerText === "Increment value"
+  );
+
+  //   left_button.style.backgroundColor = "coral";
+  right_button.style.backgroundColor = "lightblue";
+
+  streamlitDoc.addEventListener("keydown", function (e) {
+    switch (e.key) {
+      case "a":
+        left_button.click();
+        break;
+      case "d":
+        right_button.click();
+        break;
+      case "w":
+        up_button.click();
+        break;
+      case "s":
+        down_button.click();
+        break;
+      case "q":
+        select_button.click();
+        break;
+      case "e":
+        deselect_button.click();
+        break;
+      //window.parent.navigator.clipboard.readText().then((d) => {console.log(d)})
+    }
+  });
+</script>

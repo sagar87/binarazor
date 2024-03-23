@@ -1,0 +1,7 @@
+.venv
+.env
+env
+src/.env
+Dockerfile
+Dockerfile.prod
+*.zarr

@@ -1,0 +1,9 @@
+.venv
+.env
+format.sh
+secret.yml
+.streamlit
+secrets.toml
+__pycache__
+.DS_Store
+database.py

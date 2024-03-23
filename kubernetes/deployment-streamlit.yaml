@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: binarazor-deployment
+  labels:
+    app: binarazor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: binarazor
+  template:
+    metadata:
+      labels:
+        app: binarazor
+    spec:
+      containers:
+        - name: binarazor
+          image: sagar87/binarazor:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "16Gi"
+            limits:
+              cpu: "2000m"
+              memory: "32Gi"
+          env:
+            - name: ENV
+              value: "production"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: AWS_URL
+            - name: AWS_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: AWS_PATH
+            - name: PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: PROJECT_ID
+            - name: PRIVATE_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: PRIVATE_KEY_ID
+            - name: PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: PRIVATE_KEY
+            - name: CLIENT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: CLIENT_EMAIL
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: CLIENT_ID
+            - name: AUTH_PROVIDER_X509_CERT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: AUTH_PROVIDER_X509_CERT_URL
+            - name: CLIENT_X509_CERT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: CLIENT_X509_CERT_URL
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: APP_KEY
+            - name: MONGO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-username
+            - name: MONGO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-password
+            - name: MONGODB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-port
+            - name: MONGODB_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-configmap
+                  key: database_url
