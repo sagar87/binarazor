@@ -17,12 +17,14 @@ def subsample_data():
     return df
 
 
-def plotly_scatter_gl():
+def plotly_scatter_gl(boolean_array=None):
     df = subsample_data()
-    boolean_array = (
-        df[st.session_state.primary_channel] > st.session_state.slider_value
-    ).values.astype(int)
-    color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
+
+    if boolean_array is None:
+        boolean_array = (
+            df[st.session_state.primary_channel] > st.session_state.slider_value
+        ).values
+    color_array = np.array(["lightgrey", "red"])[boolean_array.astype(int)].tolist()
     # Create the layout for the plot
     layout = go.Layout(
         title="ScatterGL Plot",
@@ -54,13 +56,14 @@ def plotly_scatter_gl():
     return fig
 
 
-def plotly_scatter_marker_gl():
+def plotly_scatter_marker_gl(boolean_array=None):
     df = subsample_data()
-
-    boolean_array = (
-        df[st.session_state.primary_channel] > st.session_state.slider_value
-    ).values.astype(int)
-    color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
+    
+    if boolean_array is None:
+        boolean_array = (
+            df[st.session_state.primary_channel] > st.session_state.slider_value
+        ).values
+    color_array = np.array(["lightgrey", "red"])[boolean_array.astype(int)].tolist()
     # Create the layout for the plot
     layout = go.Layout(
         xaxis=dict(title=st.session_state.secondary_channel),
@@ -90,16 +93,22 @@ def plotly_scatter_marker_gl():
     return fig
 
 
-def plot_hist():
+def plot_hist(boolean_array=None):
     df = subsample_data()
-    boolean_array = (
-        df[st.session_state.primary_channel] > st.session_state.slider_value
-    ).values.astype(int)
-    color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
+    if boolean_array is None:
+        boolean_array = (
+            df[st.session_state.primary_channel] > st.session_state.slider_value
+        ).values
+    color_array = np.array(["lightgrey", "red"])[boolean_array.astype(int)].tolist()
     fig = px.histogram(
         df,
         x=st.session_state.primary_channel,
         color=boolean_array,
         color_discrete_map={True: "red", False: "lightgrey"},
     )  #
+    return fig
+
+
+def plot_ecdf(img):
+    fig = px.ecdf(img.reshape(-1)[img.reshape(-1) < 50])
     return fig

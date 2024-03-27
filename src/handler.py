@@ -2,66 +2,180 @@ import numpy as np
 import streamlit as st
 
 from database import (
-    get_channel_names,
+    get_all_channels,
+    get_channels,
     get_sample_expression,
+    get_samples,
+    get_statistics,
     get_status,
     get_threshold,
     update_status,
 )
 from drive import get_data, get_image_dict
-from utils import format_sample
 
 
 # handler
+def reset_session_state(keys, value=None):
+    if isinstance(keys, str):
+        keys = [keys]
+    for key in keys:
+        st.session_state[key] = value
+
+
+def handle_reviewer_select():
+    if st.session_state.selected_reviewer is None:
+        reset_session_state(["primary_channels", "primary_channel"])
+    else:
+        st.session_state.primary_channels = get_channels()
+
+    handle_primary_channel_select()
+
+
+def handle_primary_channel_select():
+    if st.session_state.primary_channel is None:
+        reset_session_state(
+            [
+                "primary_channel",
+                "samples",
+                "selected_sample",
+                "selected_sample_index",
+                "statistics",
+            ]
+        )
+
+    else:
+        st.session_state.primary_channel_index = (
+            st.session_state.primary_channels.index(st.session_state.primary_channel)
+        )
+        # samples = get_samples(st.session_state.primary_channel)
+
+        st.session_state.samples = get_samples(st.session_state.primary_channel, filter_samples=False if st.session_state.show_samples else True)
+        st.session_state.all_samples = get_samples(st.session_state.primary_channel, filter_samples=False)
+        if len(st.session_state.samples) > 0 and st.session_state.selected_sample is None:
+            st.session_state.selected_sample = st.session_state.samples[0]
+        # elif len(st.session_state.samples) > 0 and st.session_state.selected_sample is not None:
+            
+        st.session_state.statistics = get_statistics(st.session_state.primary_channel)
+        # st.session_state.selected_sample_index = st.session_state.samples.index(
+        #     st.session_state.selected_sample
+        # )
+    handle_sample_select()
+    # st.session_state.secondary_channels = get_all_channels(
+    #     st.session_state.selected_sample
+    # )
+    # st.session_state.secondary_channel = st.session_state.secondary_channels[0]
+
+    # if (st.session_state.primary_channel is None or st.session_state.primary_channel not in st.session_state.primary_channels):
+    # st.session_state.primary_channel = st.session_state.primary_channels[0]
+
+    # populate image dict
+    # st.session_state.images = get_image_dict(st.session_state.selected_sample)
+
+    # st.session_state.data = get_sample_expression(
+    #     st.session_state.selected_sample,
+    #     st.session_state.primary_channel,
+    #     st.session_state.secondary_channel,
+    # )
+
+    # sample = st.session_state.selected_sample
+    # st.session_state.data = get_sample_expression(
+    # sample, st.session_state.primary_channel, st.session_state.secondary_channel
+    # )
+    # st.session_state.slider_value = get_threshold(
+    # sample, st.session_state.primary_channel
+    # )
+    # st.session_state.status = get_status(sample, st.session_state.primary_channel)
+    # st.session_state.statistics = get_statistics(
+    # sample, st.session_state.primary_channel
+    # )
+
+
 def handle_sample_select():
     if st.session_state.selected_sample is None:
         # reset session state
-        st.session_state.selected_sample_index = None
-        st.session_state.data = None
-        st.session_state.channels = None
-        st.session_state.primary_channel = None
-        st.session_state.secondary_channel = None
-        st.session_state.primary_channel_index = None
-        st.session_state.images = None
+        # reset_session_state(
+        #     [
+        #         "primary_channel",
+        #         "samples",
+        #         "selected_sample",
+        #         "selected_sample_index",
+        #     ]
+        # )
+        reset_session_state(
+            [
+                "selected_sample_index",
+                "secondary_channels",
+                "secondary_channel",
+                "images",
+                "data",
+                "slider_value",
+                "status",
+            ]
+        )
+        # st.session_state.primary_channels = None
+        # st.session_state.primary_channel = None
+        # st.session_state.secondary_channel = None
+        # st.session_state.primary_channel_index = None
     else:
-        # df = get_data(st.session_state.selected_sample)
-        # store data frame and channels
-        st.session_state.selected_sample_index = st.session_state.samples.index(
+        print('In handle select', st.session_state.selected_sample)
+        if st.session_state.show_samples:
+            if st.session_state.selected_sample in st.session_state.all_samples:
+                st.session_state.selected_sample_index = st.session_state.all_samples.index(
+                    st.session_state.selected_sample
+                )
+            print('In handle select index', st.session_state.selected_sample, st.session_state.selected_sample_index)
+        else:
+            if st.session_state.selected_sample in st.session_state.samples:
+                st.session_state.selected_sample_index = st.session_state.samples.index(
+                    st.session_state.selected_sample
+                )
+            else:
+                st.session_state.selected_sample = None
+                st.session_state.selected_sample_index = None
+            
+        # get sample name
+        # st.session_state.primary_channels = get_all_channels(
+        #     st.session_state.selected_sample
+        # )
+        # change channel iff None is preselected
+        # if (
+        #     st.session_state.primary_channel is None
+        #     or st.session_state.primary_channel not in st.session_state.primary_channels
+        # ):
+        #     st.session_state.primary_channel = st.session_state.primary_channels[0]
+        # st.session_state.secondary_channel = st.session_state.primary_channels[0]
+
+        # st.session_state.primary_channel_index = (
+        #     st.session_state.primary_channels.index(st.session_state.primary_channel)
+        # )
+
+        st.session_state.secondary_channels = get_all_channels(
             st.session_state.selected_sample
         )
-        # get sample name
-        sample = format_sample(st.session_state.selected_sample)
-        # st.session_state.channels = [
-        #     channel
-        #     for channel in st.session_state.data.columns.values.tolist()
-        #     if channel not in ["X", "Y"]
-        # ]
-        st.session_state.channels = get_channel_names(sample)
-        # change channel iff None is preselected
         if (
-            st.session_state.primary_channel is None
-            or st.session_state.primary_channel not in st.session_state.channels
+            st.session_state.secondary_channel is None
+            or st.session_state.secondary_channel
+            not in st.session_state.secondary_channels
         ):
-            st.session_state.primary_channel = st.session_state.channels[0]
-            st.session_state.secondary_channel = st.session_state.channels[0]
-
-        st.session_state.primary_channel_index = st.session_state.channels.index(
-            st.session_state.primary_channel
-        )
+            st.session_state.secondary_channel = st.session_state.secondary_channels[0]
 
         st.session_state.data = get_sample_expression(
-            sample, st.session_state.primary_channel, st.session_state.secondary_channel
+            st.session_state.selected_sample,
+            st.session_state.primary_channel,
+            st.session_state.secondary_channel,
         )
 
         st.session_state.images = get_image_dict(
-            format_sample(st.session_state.selected_sample),
-            prefix=True if not st.session_state.image_controls else False,
+            st.session_state.selected_sample,
         )
 
         st.session_state.slider_value = get_threshold(
-            sample, st.session_state.primary_channel
+            st.session_state.selected_sample, st.session_state.primary_channel
         )
-        st.session_state.status = get_status(sample, st.session_state.primary_channel)
+        st.session_state.status = get_status(
+            st.session_state.selected_sample, st.session_state.primary_channel
+        )
+        print('out handle selected sample', st.session_state.selected_sample)
 
 
 def handle_next_sample():
@@ -96,18 +210,22 @@ def handle_previous_sample():
 
 
 def handle_next_channel():
-    if st.session_state.primary_channel_index == (len(st.session_state.channels) - 1):
+    if st.session_state.primary_channel_index == (
+        len(st.session_state.primary_channels) - 1
+    ):
         st.info("Last init")
     else:
         st.session_state.primary_channel_index += 1
         last_channel = (
             True
             if st.session_state.primary_channel_index
-            == (len(st.session_state.channels) - 1)
+            == (len(st.session_state.primary_channels) - 1)
             else False
         )
-        sample = format_sample(st.session_state.selected_sample)
-        channel = st.session_state.channels[st.session_state.primary_channel_index]
+        sample = st.session_state.selected_sample
+        channel = st.session_state.primary_channels[
+            st.session_state.primary_channel_index
+        ]
         st.session_state.primary_channel = channel
         st.session_state.data = get_sample_expression(
             sample, channel, st.session_state.secondary_channel
@@ -116,6 +234,9 @@ def handle_next_channel():
             sample, st.session_state.primary_channel
         )
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
+        st.session_state.statistics = get_statistics(
+            sample, st.session_state.primary_channel
+        )
         st.toast(f"Switched to {channel}. {'Last channel' if last_channel else ''}")
 
 
@@ -125,9 +246,11 @@ def handle_previous_channel():
     else:
         st.session_state.primary_channel_index -= 1
         first_channel = True if st.session_state.primary_channel_index == 0 else False
-        sample = format_sample(st.session_state.selected_sample)
-        channel = st.session_state.channels[st.session_state.primary_channel_index]
-        st.session_state.primary_channel = st.session_state.channels[
+        sample = st.session_state.selected_sample
+        channel = st.session_state.primary_channels[
+            st.session_state.primary_channel_index
+        ]
+        st.session_state.primary_channel = st.session_state.primary_channels[
             st.session_state.primary_channel_index
         ]
         st.session_state.data = get_sample_expression(
@@ -137,63 +260,66 @@ def handle_previous_channel():
             sample, st.session_state.primary_channel
         )
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
+        st.session_state.statistics = get_statistics(
+            sample, st.session_state.primary_channel
+        )
         st.toast(f"Switched to {channel}. {'Last channel' if first_channel else ''} ")
 
 
-def handle_primary_channel_select():
-    st.session_state.primary_channel_index = st.session_state.channels.index(
-        st.session_state.primary_channel
-    )
-    sample = format_sample(st.session_state.selected_sample)
-    st.session_state.data = get_sample_expression(
-        sample, st.session_state.primary_channel, st.session_state.secondary_channel
-    )
-    st.session_state.slider_value = get_threshold(
-        sample, st.session_state.primary_channel
-    )
-    st.session_state.status = get_status(sample, st.session_state.primary_channel)
-
-
 def handle_secondary_channel_select():
-    sample = format_sample(st.session_state.selected_sample)
+
     st.session_state.data = get_sample_expression(
-        sample, st.session_state.primary_channel, st.session_state.secondary_channel
+        st.session_state.selected_sample,
+        st.session_state.primary_channel,
+        st.session_state.secondary_channel,
     )
 
 
 def handle_image_controls():
     st.session_state.image_controls = False if st.session_state.image_controls else True
-    st.session_state.images = get_image_dict(
-        format_sample(st.session_state.selected_sample),
-        prefix=True if not st.session_state.image_controls else False,
-    )
+    st.session_state.images = get_image_dict(st.session_state.selected_sample)
 
 
 def handle_slider(kl, kh, new_l, new_h):
     st.session_state[kl] = new_l
     st.session_state[kh] = new_h
-    # np.mean(s.to_numpy() <= q)
 
 
 def increment_value():
-    st.session_state.slider_value += 0.1
+    st.session_state.slider_value = min(
+        [4.0, st.session_state.slider_value + st.session_state.stepsize]
+    )
 
 
 def decrement_value():
-    st.session_state.slider_value -= 0.1
+    st.session_state.slider_value = max(
+        [0.0, st.session_state.slider_value - st.session_state.stepsize]
+    )
 
 
 def handle_update_threshold():
     st.session_state.status = "reviewed"
     update_status(
-        format_sample(st.session_state.selected_sample),
+        st.session_state.selected_sample,
         st.session_state.primary_channel,
     )
+    handle_primary_channel_select()
+    st.info("Switched sample")
 
 
 def handle_bad_channel():
     st.session_state.status = "bad"
     update_status(
-        format_sample(st.session_state.selected_sample),
+        st.session_state.selected_sample,
         st.session_state.primary_channel,
     )
+    handle_primary_channel_select()
+    st.info("Switched sample")
+
+def handle_toggle_all_samples():
+    print(st.session_state.selected_sample, st.session_state.show_samples)
+    st.session_state.selected_sample = st.session_state.selected_sample
+    
+    # st.session_state.samples = get_samples(st.session_state.primary_channel, filter_samples=False if st.session_state.show_samples else True)
+    handle_primary_channel_select()
+    st.info("Showing all samples")

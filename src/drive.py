@@ -20,22 +20,18 @@ fs = s3fs.S3FileSystem(anon=False, client_kwargs={"endpoint_url": AWS_URL})
 @st.cache_data
 def get_samples():
     """Returns sample paths dict."""
-    return natsorted([f for f in fs.glob(f"{AWS_PATH}/*/*.csv")])
+    sample_dict = {}
+    for path in natsorted([f for f in fs.glob(f"{AWS_PATH}/*/*.csv")]):
+        sample_dict[path.split("/")[-2]] = path
+    return sample_dict
 
 
-def get_image_dict(path, prefix=True):
+def get_image_dict(sample):
     """Returns image dict."""
-    if prefix:
-        image_paths = natsorted([f for f in fs.glob(f"{AWS_PATH}/{path}/*.png")])
-        image_dict = {
-            img.split("/")[-1].split(".")[0]: AWS_URL + "/" + img for img in image_paths
-        }
-    else:
-        image_paths = natsorted([f for f in fs.glob(f"{AWS_PATH}/{path}/*.tiff")])
-        print(image_paths)
-        image_dict = {img.split("/")[-1].split(".")[0]: img for img in image_paths}
+    image_paths = natsorted([f for f in fs.glob(f"{AWS_PATH}/{sample}/*.tiff")])
+    image_dict = {img.split("/")[-1].split(".")[0]: img for img in image_paths}
 
-    print(image_dict)
+    # print(image_dict)
     return image_dict
 
 
@@ -113,3 +109,8 @@ def get_image(filename):
 #         sample_data[sub][int(init)] = path
 
 #     return sample_data
+
+if __name__ == "__main__":
+    import pdb
+
+    pdb.set_trace()
