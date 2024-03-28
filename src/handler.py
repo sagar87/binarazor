@@ -1,4 +1,3 @@
-import numpy as np
 import streamlit as st
 
 from database import (
@@ -8,10 +7,9 @@ from database import (
     get_samples,
     get_statistics,
     get_status,
-    get_threshold,
     update_status,
 )
-from drive import get_data, get_image_dict
+from drive import get_image_dict, get_zarr_dict, read_zarr_sample
 
 
 # handler
@@ -40,6 +38,9 @@ def handle_primary_channel_select():
                 "selected_sample",
                 "selected_sample_index",
                 "statistics",
+                "zarr",
+                "zarr_dict",
+                "segmentation",
             ]
         )
 
@@ -48,14 +49,41 @@ def handle_primary_channel_select():
             st.session_state.primary_channels.index(st.session_state.primary_channel)
         )
         # samples = get_samples(st.session_state.primary_channel)
+        print("IN PRIMARY CHANNEL", st.session_state.primary_channel)
 
-        st.session_state.samples = get_samples(st.session_state.primary_channel, filter_samples=False if st.session_state.show_samples else True)
-        st.session_state.all_samples = get_samples(st.session_state.primary_channel, filter_samples=False)
-        if len(st.session_state.samples) > 0 and st.session_state.selected_sample is None:
-            st.session_state.selected_sample = st.session_state.samples[0]
-        # elif len(st.session_state.samples) > 0 and st.session_state.selected_sample is not None:
-            
+        st.session_state.samples = get_samples(
+            st.session_state.primary_channel,
+            filter_samples=False if st.session_state.show_samples else True,
+        )
+        st.session_state.zarr_dict = get_zarr_dict()
         st.session_state.statistics = get_statistics(st.session_state.primary_channel)
+        print()
+        print()
+        print()
+        print("IN PRIMARY CHANNEL", st.session_state.samples)
+        print()
+        print()
+        print()
+
+        if (
+            len(st.session_state.samples) > 0
+            and st.session_state.selected_sample not in st.session_state.samples
+        ):
+            st.session_state.selected_sample = None
+        elif (
+            len(st.session_state.samples) > 0
+            and st.session_state.selected_sample in st.session_state.samples
+        ):
+            st.session_state.selected_sample = st.session_state.selected_sample
+        else:
+            st.session_state.selected_sample = None
+        print()
+        print()
+        print()
+        print("IN PRIMARY CHANNEL 2", st.session_state.selected_sample)
+        print()
+        print()
+        print()
         # st.session_state.selected_sample_index = st.session_state.samples.index(
         #     st.session_state.selected_sample
         # )
@@ -101,6 +129,7 @@ def handle_sample_select():
         #         "selected_sample_index",
         #     ]
         # )
+        print("RESETTING SAMPLE SELECT!")
         reset_session_state(
             [
                 "selected_sample_index",
@@ -117,22 +146,28 @@ def handle_sample_select():
         # st.session_state.secondary_channel = None
         # st.session_state.primary_channel_index = None
     else:
-        print('In handle select', st.session_state.selected_sample)
-        if st.session_state.show_samples:
-            if st.session_state.selected_sample in st.session_state.all_samples:
-                st.session_state.selected_sample_index = st.session_state.all_samples.index(
-                    st.session_state.selected_sample
-                )
-            print('In handle select index', st.session_state.selected_sample, st.session_state.selected_sample_index)
+        st.session_state.selected_sample = st.session_state.selected_sample
+        print("In handle select", st.session_state.selected_sample)
+        if st.session_state.selected_sample in st.session_state.samples:
+            st.session_state.selected_sample_index = st.session_state.samples.index(
+                st.session_state.selected_sample
+            )
         else:
-            if st.session_state.selected_sample in st.session_state.samples:
-                st.session_state.selected_sample_index = st.session_state.samples.index(
-                    st.session_state.selected_sample
-                )
-            else:
-                st.session_state.selected_sample = None
-                st.session_state.selected_sample_index = None
-            
+            st.session_state.selected_sample = None
+            st.session_state.selected_sample_index = None
+            reset_session_state(
+                [
+                    "selected_sample_index",
+                    "secondary_channels",
+                    "secondary_channel",
+                    "data",
+                    "slider_value",
+                    "status",
+                    "zarr" "segmentation",
+                ]
+            )
+            return
+
         # get sample name
         # st.session_state.primary_channels = get_all_channels(
         #     st.session_state.selected_sample
@@ -165,17 +200,25 @@ def handle_sample_select():
             st.session_state.secondary_channel,
         )
 
-        st.session_state.images = get_image_dict(
+        # st.session_state.images = get_image_dict(
+        #     st.session_state.selected_sample,
+        # )
+
+        st.session_state.zarr = read_zarr_sample(
+            st.session_state.zarr_dict[st.session_state.primary_channel],
             st.session_state.selected_sample,
         )
 
-        st.session_state.slider_value = get_threshold(
-            st.session_state.selected_sample, st.session_state.primary_channel
+        st.session_state.segmentation = read_zarr_sample(
+            st.session_state.zarr_dict["segmentation"],
+            st.session_state.selected_sample,
         )
+        st.session_state.slider_value = 0.5
         st.session_state.status = get_status(
             st.session_state.selected_sample, st.session_state.primary_channel
         )
-        print('out handle selected sample', st.session_state.selected_sample)
+
+        print("out handle selected sample", st.session_state.selected_sample)
 
 
 def handle_next_sample():
@@ -230,13 +273,24 @@ def handle_next_channel():
         st.session_state.data = get_sample_expression(
             sample, channel, st.session_state.secondary_channel
         )
-        st.session_state.slider_value = get_threshold(
-            sample, st.session_state.primary_channel
-        )
+        # st.session_state.slider_value = get_threshold(
+        #     sample, st.session_state.primary_channel
+        # )
+        st.session_state.slider_value = 0.5
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
-        st.session_state.statistics = get_statistics(
-            sample, st.session_state.primary_channel
+
+        st.session_state.zarr = read_zarr_sample(
+            st.session_state.zarr_dict[st.session_state.primary_channel],
+            st.session_state.selected_sample,
         )
+
+        st.session_state.segmentation = read_zarr_sample(
+            st.session_state.zarr_dict["segmentation"],
+            st.session_state.selected_sample,
+        )
+        # st.session_state.statistics = get_statistics(
+        #     sample, st.session_state.primary_channel
+        # )
         st.toast(f"Switched to {channel}. {'Last channel' if last_channel else ''}")
 
 
@@ -256,12 +310,22 @@ def handle_previous_channel():
         st.session_state.data = get_sample_expression(
             sample, channel, st.session_state.secondary_channel
         )
-        st.session_state.slider_value = get_threshold(
-            sample, st.session_state.primary_channel
-        )
+        # st.session_state.slider_value = get_threshold(
+        #     sample, st.session_state.primary_channel
+        # )
+        st.session_state.slider_value = 0.5
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
-        st.session_state.statistics = get_statistics(
-            sample, st.session_state.primary_channel
+        # st.session_state.statistics = get_statistics(
+        #     sample, st.session_state.primary_channel
+        # )
+        st.session_state.zarr = read_zarr_sample(
+            st.session_state.zarr_dict[st.session_state.primary_channel],
+            st.session_state.selected_sample,
+        )
+
+        st.session_state.segmentation = read_zarr_sample(
+            st.session_state.zarr_dict["segmentation"],
+            st.session_state.selected_sample,
         )
         st.toast(f"Switched to {channel}. {'Last channel' if first_channel else ''} ")
 
@@ -287,7 +351,7 @@ def handle_slider(kl, kh, new_l, new_h):
 
 def increment_value():
     st.session_state.slider_value = min(
-        [4.0, st.session_state.slider_value + st.session_state.stepsize]
+        [1.0, st.session_state.slider_value + st.session_state.stepsize]
     )
 
 
@@ -316,10 +380,10 @@ def handle_bad_channel():
     handle_primary_channel_select()
     st.info("Switched sample")
 
+
 def handle_toggle_all_samples():
     print(st.session_state.selected_sample, st.session_state.show_samples)
-    st.session_state.selected_sample = st.session_state.selected_sample
-    
+
     # st.session_state.samples = get_samples(st.session_state.primary_channel, filter_samples=False if st.session_state.show_samples else True)
     handle_primary_channel_select()
     st.info("Showing all samples")

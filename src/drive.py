@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import s3fs
 import streamlit as st
+import xarray as xr
 from dotenv import load_dotenv
 from natsort import natsorted
 from PIL import Image
@@ -15,6 +16,30 @@ AWS_URL = os.getenv("AWS_URL")
 AWS_PATH = os.getenv("AWS_PATH")
 
 fs = s3fs.S3FileSystem(anon=False, client_kwargs={"endpoint_url": AWS_URL})
+
+
+@st.cache_data
+def get_zarr_dict():
+    file_dict = {
+        f.split("/")[-1].split(".")[0]: f
+        for f in fs.ls(AWS_PATH)
+        if f.endswith(".zarr")
+    }
+    return file_dict
+
+
+@st.cache_data
+def read_zarr(filename):
+    store = s3fs.S3Map(root=filename, s3=fs, check=False)
+    return xr.open_zarr(store=store, consolidated=True)
+
+
+@st.cache_data
+def read_zarr_sample(filename, sample):
+    store = s3fs.S3Map(root=filename, s3=fs, check=False)
+    zarr = xr.open_zarr(store=store, consolidated=True)
+    array = zarr._image.sel(channels=sample).values.squeeze()
+    return array
 
 
 @st.cache_data
