@@ -1,12 +1,11 @@
 import cv2
 import numpy as np
 import streamlit as st
+
+st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide")
 import streamlit.components.v1 as components
 from skimage.measure import regionprops_table
 
-st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide")
-
-from database import get_reviewers
 from handler import (
     decrement_value,
     handle_bad_channel,
@@ -24,104 +23,7 @@ from handler import (
     increment_value,
 )
 from plots import plot_hist, plotly_scatter_gl, plotly_scatter_marker_gl, strip_plot
-from utils import read_html
-
-# Session state
-if "reviewers" not in st.session_state:
-    st.session_state.reviewers = get_reviewers()
-
-if "selected_reviewer" not in st.session_state:
-    st.session_state.selected_reviewer = None
-
-if "primary_channels" not in st.session_state:
-    st.session_state.primary_channels = None
-
-if "primary_channel" not in st.session_state:
-    st.session_state.primary_channel = None
-
-if "primary_channel_index" not in st.session_state:
-    st.session_state.primary_channel_index = None
-
-if "primary_channel_fixed" not in st.session_state:
-    st.session_state.primary_channel_fixed = False
-
-if "show_samples" not in st.session_state:
-    st.session_state.show_samples = False
-
-if "samples" not in st.session_state:
-    st.session_state.samples = None
-
-if "selected_sample" not in st.session_state:
-    st.session_state.selected_sample = None
-
-if "statistics" not in st.session_state:
-    st.session_state.statistics = None
-
-if "selected_sample_index" not in st.session_state:
-    st.session_state.selected_sample_index = None
-
-if "data" not in st.session_state:
-    st.session_state.data = None
-
-if "zarr_dict" not in st.session_state:
-    st.session_state.zarr_dict = None
-
-if "zarr" not in st.session_state:
-    st.session_state.zarr = None
-
-if "segmentation" not in st.session_state:
-    st.session_state.segmentation = None
-
-if "secondary_channels" not in st.session_state:
-    st.session_state.secondary_channels = None
-
-if "secondary_channel" not in st.session_state:
-    st.session_state.secondary_channel = None
-
-if "slider_value" not in st.session_state:
-    st.session_state.slider_value = 0.5
-
-if "stepsize" not in st.session_state:
-    st.session_state.stepsize = 0.05
-
-if "subsample" not in st.session_state:
-    st.session_state.subsample = 0
-
-if "dotsize" not in st.session_state:
-    st.session_state.dotsize = 2
-
-if "lower_quantile" not in st.session_state:
-    st.session_state.lower_quantile = 0.990
-
-if "upper_quantile" not in st.session_state:
-    st.session_state.upper_quantile = 0.998
-
-if "status" not in st.session_state:
-    st.session_state.status = None
-
-if "plot_height" not in st.session_state:
-    st.session_state.plot_height = 1000
-
-
-def is_positive(regionmask: np.ndarray, intensity_image: np.ndarray) -> float:
-    """
-    Computes whether the cell is positive or not
-    """
-    # regionmask
-
-    return (intensity_image[regionmask] > 0).sum() / (
-        regionmask == 1
-    ).sum() > st.session_state.slider_value
-
-
-def percentage_positive(regionmask: np.ndarray, intensity_image: np.ndarray) -> float:
-    """
-    Computes whether the cell is positive or not
-    """
-    # regionmask
-
-    return (intensity_image[regionmask] > 0).sum() / (regionmask == 1).sum()
-
+from utils import is_positive, percentage_positive, read_html
 
 with st.container(border=False):
     with st.expander("session_state"):

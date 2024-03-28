@@ -3,6 +3,7 @@ import streamlit as st
 from database import (
     get_all_channels,
     get_channels,
+    get_reviewers,
     get_sample_expression,
     get_samples,
     get_statistics,
@@ -10,6 +11,82 @@ from database import (
     update_status,
 )
 from drive import get_image_dict, get_zarr_dict, read_zarr_sample
+
+# Session state
+if "reviewers" not in st.session_state:
+    st.session_state.reviewers = get_reviewers()
+
+if "selected_reviewer" not in st.session_state:
+    st.session_state.selected_reviewer = None
+
+if "primary_channels" not in st.session_state:
+    st.session_state.primary_channels = None
+
+if "primary_channel" not in st.session_state:
+    st.session_state.primary_channel = None
+
+if "primary_channel_index" not in st.session_state:
+    st.session_state.primary_channel_index = None
+
+if "primary_channel_fixed" not in st.session_state:
+    st.session_state.primary_channel_fixed = False
+
+if "show_samples" not in st.session_state:
+    st.session_state.show_samples = False
+
+if "samples" not in st.session_state:
+    st.session_state.samples = None
+
+if "selected_sample" not in st.session_state:
+    st.session_state.selected_sample = None
+
+if "statistics" not in st.session_state:
+    st.session_state.statistics = None
+
+if "selected_sample_index" not in st.session_state:
+    st.session_state.selected_sample_index = None
+
+if "data" not in st.session_state:
+    st.session_state.data = None
+
+if "zarr_dict" not in st.session_state:
+    st.session_state.zarr_dict = None
+
+if "zarr" not in st.session_state:
+    st.session_state.zarr = None
+
+if "segmentation" not in st.session_state:
+    st.session_state.segmentation = None
+
+if "secondary_channels" not in st.session_state:
+    st.session_state.secondary_channels = None
+
+if "secondary_channel" not in st.session_state:
+    st.session_state.secondary_channel = None
+
+if "slider_value" not in st.session_state:
+    st.session_state.slider_value = 0.5
+
+if "stepsize" not in st.session_state:
+    st.session_state.stepsize = 0.05
+
+if "subsample" not in st.session_state:
+    st.session_state.subsample = 0
+
+if "dotsize" not in st.session_state:
+    st.session_state.dotsize = 2
+
+if "lower_quantile" not in st.session_state:
+    st.session_state.lower_quantile = 0.990
+
+if "upper_quantile" not in st.session_state:
+    st.session_state.upper_quantile = 0.998
+
+if "status" not in st.session_state:
+    st.session_state.status = None
+
+if "plot_height" not in st.session_state:
+    st.session_state.plot_height = 1000
 
 
 # handler
