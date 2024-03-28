@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 import streamlit as st
 
@@ -6,6 +5,7 @@ st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide
 import streamlit.components.v1 as components
 from skimage.measure import regionprops_table
 
+from database import get_reviewers
 from handler import (
     decrement_value,
     handle_bad_channel,
@@ -23,7 +23,93 @@ from handler import (
     increment_value,
 )
 from plots import plot_hist, plotly_scatter_gl, plotly_scatter_marker_gl, strip_plot
-from utils import is_positive, percentage_positive, read_html
+from utils import (
+    is_positive,
+    merge_results,
+    normalise_image,
+    percentage_positive,
+    read_html,
+)
+
+# Session state
+if "reviewers" not in st.session_state:
+    st.session_state.reviewers = get_reviewers()
+
+if "selected_reviewer" not in st.session_state:
+    st.session_state.selected_reviewer = None
+
+if "primary_channels" not in st.session_state:
+    st.session_state.primary_channels = None
+
+if "primary_channel" not in st.session_state:
+    st.session_state.primary_channel = None
+
+if "primary_channel_index" not in st.session_state:
+    st.session_state.primary_channel_index = None
+
+if "primary_channel_fixed" not in st.session_state:
+    st.session_state.primary_channel_fixed = False
+
+if "show_samples" not in st.session_state:
+    st.session_state.show_samples = False
+
+if "samples" not in st.session_state:
+    st.session_state.samples = None
+
+if "selected_sample" not in st.session_state:
+    st.session_state.selected_sample = None
+
+if "statistics" not in st.session_state:
+    st.session_state.statistics = None
+
+if "selected_sample_index" not in st.session_state:
+    st.session_state.selected_sample_index = None
+
+if "data" not in st.session_state:
+    st.session_state.data = None
+
+if "zarr_dict" not in st.session_state:
+    st.session_state.zarr_dict = None
+
+if "zarr" not in st.session_state:
+    st.session_state.zarr = None
+
+if "segmentation" not in st.session_state:
+    st.session_state.segmentation = None
+
+if "secondary_channels" not in st.session_state:
+    st.session_state.secondary_channels = None
+
+if "secondary_channel" not in st.session_state:
+    st.session_state.secondary_channel = None
+
+if "slider_value" not in st.session_state:
+    st.session_state.slider_value = 0.5
+
+if "stepsize" not in st.session_state:
+    st.session_state.stepsize = 0.05
+
+if "subsample" not in st.session_state:
+    st.session_state.subsample = 0
+
+if "dotsize_neg" not in st.session_state:
+    st.session_state.dotsize_neg = 3
+    
+if "dotsize_pos" not in st.session_state:
+    st.session_state.dotsize_pos = 6
+
+if "lower_quantile" not in st.session_state:
+    st.session_state.lower_quantile = 0.990
+
+if "upper_quantile" not in st.session_state:
+    st.session_state.upper_quantile = 0.998
+
+if "status" not in st.session_state:
+    st.session_state.status = None
+
+if "plot_height" not in st.session_state:
+    st.session_state.plot_height = 1000
+
 
 with st.container(border=False):
     with st.expander("session_state"):
@@ -34,7 +120,7 @@ with st.container(border=False):
                 st.write(var, st.session_state[var])
 
 with st.container():
-    if st.session_state.data is not None:
+    if st.session_state.selected_sample is not None:
         if st.session_state.status == "not reviewed":
             icon = ":question:"
         elif st.session_state.status == "bad":
@@ -48,10 +134,6 @@ with st.container():
         # st.dataframe(st.session_state.data)
 
         with st.container(border=True):
-            channel_index = st.session_state.primary_channels.index(
-                st.session_state.primary_channel
-            )
-
             (
                 bcol1,
                 bcol2,
@@ -158,7 +240,7 @@ with st.container():
                 kwargs={"kl": lower_key, "kh": upper_key, "new_l": low, "new_h": high},
                 # disabled=st.session_state.image_controls
             )
-            img_filtered = (img - l).clip(min=0)
+            img_filtered = (img - l).clip(min=0).astype("int32")
 
             res = regionprops_table(
                 seg,
@@ -169,6 +251,7 @@ with st.container():
                     percentage_positive,
                 ),
             )
+            df = merge_results(st.session_state.data, st.session_state.subsample, res)
 
         # read in control elements via html
         components.html(read_html(), height=0, width=0)
@@ -177,25 +260,23 @@ with st.container():
             col1, col2, col3 = st.columns(3)
             with col1:
                 with st.expander("Raw Data", expanded=True):
-                    low = np.quantile(img, 0.03)
-                    high = np.quantile(img, 0.998)
-                    alpha = 255.0 / ((high - low) + 1e-6)
                     st.image(
-                        cv2.convertScaleAbs(img[::-1], alpha=alpha),
+                        normalise_image(img),
                         use_column_width=True,
                     )
             with col2:
                 with st.expander("Filtered data", expanded=True):
-                    alpha = 255.0 / ((h - l) + 1e-6)
                     st.image(
-                        cv2.convertScaleAbs(img_filtered[::-1], alpha=alpha),
+                        normalise_image(
+                            img_filtered, lower=l, upper=h, func=lambda img, val: val
+                        ),
                         use_column_width=True,
                     )
 
             with col3:
                 with st.expander("spatial_scatter", expanded=True):
                     st.plotly_chart(
-                        plotly_scatter_gl(res["is_positive"]),
+                        plotly_scatter_gl(df),
                         use_container_width=True,
                     )
 
@@ -205,17 +286,15 @@ with st.container():
                 with st.expander("spatial_scatter", expanded=True):
                     if st.session_state.secondary_channel is not None:
                         st.plotly_chart(
-                            plotly_scatter_marker_gl(res["is_positive"]),
+                            plotly_scatter_marker_gl(df),
                             use_container_width=True,
                         )
             with col5:
                 with st.expander("Histogram", expanded=True):
-                    st.plotly_chart(
-                        plot_hist(res["is_positive"]), use_container_width=True
-                    )
+                    st.plotly_chart(plot_hist(df), use_container_width=True)
             with col6:
                 with st.expander("is positive", expanded=True):
-                    st.plotly_chart(strip_plot(res), use_container_width=True)
+                    st.plotly_chart(strip_plot(df), use_container_width=True)
 
 
 with st.sidebar:
@@ -265,12 +344,6 @@ with st.sidebar:
             st.session_state.statistics["total"],
         )
         if len(st.session_state.samples) != 0:
-            print(
-                "IN SIDEBAR",
-                st.session_state.samples,
-                st.session_state.selected_sample,
-                st.session_state.selected_sample_index,
-            )
             # if not st.session_state.show_samples:
             # current_sample = st.session_state.selected_sample
             _ = st.selectbox(
@@ -282,25 +355,7 @@ with st.sidebar:
                 on_change=handle_sample_select,
                 placeholder="Select Sample...",
             )
-            # if st.session_state.selected_sample is None:
-            # some strange streamlit bug
-            # st.session_state.selected_sample = current_sample
-            print(
-                "IN SIDEBAR After",
-                st.session_state.samples,
-                st.session_state.selected_sample,
-                st.session_state.selected_sample_index,
-            )
-            # else:
-            # _ = st.selectbox(
-            #     "Select from all sample:",
-            #     st.session_state.all_samples,
-            #     index=st.session_state.selected_sample_index,
-            #     # format_func=format_sample,
-            #     key="selected_sample",
-            #     on_change=handle_sample_select,
-            #     placeholder="Select Sample...",
-            # )
+
             st.write(
                 "You selected:",
                 st.session_state.selected_sample
@@ -337,7 +392,7 @@ with st.sidebar:
                 min_value=0.0,
                 step=0.05,
             )
-            st.write(st.session_state.lower_quantile)
+            # st.write(st.session_state.lower_quantile)
         with percentile_col2:
             _ = st.number_input(
                 "Upper percentile",
@@ -348,9 +403,7 @@ with st.sidebar:
                 max_value=1.0,
                 step=0.05,
             )
-            st.write(st.session_state.upper_quantile)
-
-        st.markdown("""---""")
+            # st.write(st.session_state.upper_quantile)
 
         _ = st.number_input(
             "Subsample Data (for faster plotting, 0 no subsampling)",
@@ -363,14 +416,22 @@ with st.sidebar:
         st.write(
             f"You are viewing {st.session_state.subsample if st.session_state.subsample != 0 else st.session_state.data.shape[0]} cells."
         )
-
-        _ = st.number_input(
-            "Dot size (spatial)",
-            value=st.session_state.dotsize,
-            key="dotsize",
-            format="%d",
-        )
-
+        dot_col1, dot_col2 = st.columns(2)
+        with dot_col1:
+            _ = st.number_input(
+                "Dot size (-)",
+                value=st.session_state.dotsize_neg,
+                key="dotsize_neg",
+                format="%d",
+            )
+        with dot_col2:
+            _ = st.number_input(
+                "Dot size (+)",
+                value=st.session_state.dotsize_pos,
+                key="dotsize_pos",
+                format="%d",
+            )
+            
         _ = st.number_input(
             "Step size",
             value=st.session_state.stepsize,
