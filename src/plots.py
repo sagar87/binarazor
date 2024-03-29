@@ -6,37 +6,66 @@ import streamlit as st
 
 
 def plotly_scatter_gl(df):
-    boolean_array = df.is_positive.values.astype(int)
-    color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
-    size_array = np.array([st.session_state.dotsize_neg, st.session_state.dotsize_pos])[
-        boolean_array
-    ].tolist()
-    # Create the layout for the plot
-    layout = go.Layout(
-        # xaxis=dict(title="X Axis"),
-        # yaxis=dict(title="Y Axis"),
-        scene=dict(aspectmode="data"),
-        height=st.session_state.plot_height
-        # aspectmode='equal',  # Set aspect ratio to be equal
-        # aspectratio=dict(x=1, y=1)  # Set the aspect ratio to 1:1
-    )
+    if st.session_state.postive_cells:
+        df = df[df.is_positive]
+        layout = go.Layout(
+            # xaxis=dict(title="X Axis"),
+            # yaxis=dict(title="Y Axis"),
+            scene=dict(aspectmode="data"),
+            height=st.session_state.plot_height
+            # aspectmode='equal',  # Set aspect ratio to be equal
+            # aspectratio=dict(x=1, y=1)  # Set the aspect ratio to 1:1
+        )
 
-    # print(boolean_array)
-    fig = go.Figure(
-        data=go.Scattergl(
-            x=df["X"],
-            y=df["Y"],
-            mode="markers",
-            marker=dict(size=size_array, color=color_array, line_width=0),
-        ),
-        layout=layout,
-    )
+        # print(boolean_array)
+        fig = go.Figure(
+            data=go.Scattergl(
+                x=df["X"],
+                y=df["Y"],
+                mode="markers",
+                marker=dict(size=st.session_state.dotsize_pos, color='red', line_width=0),
+            ),
+            layout=layout,
+        )
 
-    fig.update_yaxes(
-        scaleanchor="x",
-        scaleratio=1,
-        autorange="reversed",
-    )
+        fig.update_yaxes(
+            scaleanchor="x",
+            scaleratio=1,
+            autorange="reversed",
+        )        
+        
+    else:
+        boolean_array = df.is_positive.values.astype(int)
+        color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
+        size_array = np.array([st.session_state.dotsize_neg, st.session_state.dotsize_pos])[
+            boolean_array
+        ].tolist()
+        # Create the layout for the plot
+        layout = go.Layout(
+            # xaxis=dict(title="X Axis"),
+            # yaxis=dict(title="Y Axis"),
+            scene=dict(aspectmode="data"),
+            height=st.session_state.plot_height
+            # aspectmode='equal',  # Set aspect ratio to be equal
+            # aspectratio=dict(x=1, y=1)  # Set the aspect ratio to 1:1
+        )
+
+        # print(boolean_array)
+        fig = go.Figure(
+            data=go.Scattergl(
+                x=df["X"],
+                y=df["Y"],
+                mode="markers",
+                marker=dict(size=size_array, color=color_array, line_width=0),
+            ),
+            layout=layout,
+        )
+
+        fig.update_yaxes(
+            scaleanchor="x",
+            scaleratio=1,
+            autorange="reversed",
+        )
 
     return fig
 

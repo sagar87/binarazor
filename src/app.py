@@ -109,6 +109,9 @@ if "status" not in st.session_state:
 
 if "plot_height" not in st.session_state:
     st.session_state.plot_height = 1000
+    
+if "postive_cells" not in st.session_state:
+    st.session_state.postive_cells = False
 
 
 with st.container(border=False):
@@ -416,6 +419,9 @@ with st.sidebar:
         st.write(
             f"You are viewing {st.session_state.subsample if st.session_state.subsample != 0 else st.session_state.data.shape[0]} cells."
         )
+        
+        st.toggle("Show positive cells only", key="postive_cells")
+        
         dot_col1, dot_col2 = st.columns(2)
         with dot_col1:
             _ = st.number_input(
