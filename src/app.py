@@ -2,6 +2,8 @@ import numpy as np
 import streamlit as st
 
 st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide")
+from functools import partial
+
 import streamlit.components.v1 as components
 from skimage.measure import regionprops_table
 
@@ -94,7 +96,7 @@ if "subsample" not in st.session_state:
 
 if "dotsize_neg" not in st.session_state:
     st.session_state.dotsize_neg = 3
-    
+
 if "dotsize_pos" not in st.session_state:
     st.session_state.dotsize_pos = 6
 
@@ -109,10 +111,12 @@ if "status" not in st.session_state:
 
 if "plot_height" not in st.session_state:
     st.session_state.plot_height = 1000
-    
-if "postive_cells" not in st.session_state:
-    st.session_state.postive_cells = False
 
+if "postive_cells" not in st.session_state:
+    st.session_state.postive_cells = True
+
+if "two_columns" not in st.session_state:
+    st.session_state.two_columns = True
 
 with st.container(border=False):
     with st.expander("session_state"):
@@ -136,6 +140,56 @@ with st.container():
 
         # st.dataframe(st.session_state.data)
 
+        with st.container(border=True):
+            # slider_col1, slider_col2 = st.columns(2)
+            # with slider_col1:
+            slider = st.slider(
+                "Threshold",
+                min_value=0.0,
+                max_value=1.0,
+                step=st.session_state.stepsize,
+                key="slider_value",
+                disabled=True if st.session_state.status == "bad" else False,
+            )
+            # with slider_col2:
+        with st.container(border=True):
+            img = st.session_state.zarr
+            seg = st.session_state.segmentation
+
+            # img = img[::-1, :]
+
+            lower_key = f"low_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
+            upper_key = f"high_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
+
+            lower, upper = st.slider(
+                "Select a values for thresholding",
+                min_value=0.0,
+                max_value=255.0,
+                value=(st.session_state[lower_key], st.session_state[upper_key]),
+                step=1.,
+                key="intensity",
+                on_change=handle_slider,
+                kwargs={
+                    "kl": lower_key,
+                    "kh": upper_key,
+                    "new_l": st.session_state[lower_key],
+                    "new_h": st.session_state[upper_key],
+                },
+                disabled=True if st.session_state.status == "bad" else False,
+            )
+            img_filtered = (img - lower).clip(min=0).astype("int32")
+            # img_filtered[img_filtered > (upper-lower)] = 0
+
+            res = regionprops_table(
+                seg,
+                intensity_image=img_filtered,
+                properties=("label",),
+                extra_properties=(
+                    is_positive,
+                    percentage_positive,
+                ),
+            )
+            df = merge_results(st.session_state.data, st.session_state.subsample, res)
         with st.container(border=True):
             (
                 bcol1,
@@ -175,129 +229,136 @@ with st.container():
 
             with bcol3:
                 st.button(
+                    "Prev Sample (W)",
+                    on_click=handle_previous_sample,
+                    disabled=True
+                    if st.session_state.selected_sample_index == 0
+                    else False,
+                )                
+
+            with bcol4:
+                st.button(
                     "Next Sample (S)",
                     on_click=handle_next_sample,
                     disabled=True
                     if st.session_state.selected_sample_index
                     == (len(st.session_state.samples) - 1)
                     else False,
-                )
-
-            with bcol4:
-                st.button(
-                    "Prev Sample (W)",
-                    on_click=handle_previous_sample,
-                    disabled=True
-                    if st.session_state.selected_sample_index == 0
-                    else False,
-                )
+                )                
+                
 
             with bcol5:
-                st.button("Increment threshold (D)", on_click=increment_value)
+                st.button("Decrement threshold (A)", on_click=decrement_value)
+                
 
             with bcol6:
-                st.button("Decrement threshold (A)", on_click=decrement_value)
+                st.button("Increment threshold (D)", on_click=increment_value)
 
             with bcol7:
-                st.button("Update Threshold", on_click=handle_update_threshold)
+                st.button(
+                    "Update Threshold (E)",
+                    on_click=handle_update_threshold,
+                    kwargs={
+                        "lower": lower,
+                        "upper": upper,
+                        "cells": df[df.is_positive].label.tolist(),
+                    },
+                )
 
             with bcol8:
-                st.button("Mark as bad", on_click=handle_bad_channel)
-
-        with st.container(border=True):
-            # slider_col1, slider_col2 = st.columns(2)
-            # with slider_col1:
-            slider = st.slider(
-                "Threshold",
-                min_value=0.0,
-                max_value=1.0,
-                step=st.session_state.stepsize,
-                key="slider_value",
-                disabled=True if st.session_state.status == "bad" else False,
-            )
-            # with slider_col2:
-        with st.container(border=True):
-            img = st.session_state.zarr
-            seg = st.session_state.segmentation
-
-            # img = img[::-1, :]
-
-            lower_key = f"low_{st.session_state.lower_quantile}_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
-            upper_key = f"high_{st.session_state.upper_quantile}_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
-
-            if lower_key in st.session_state:
-                low = st.session_state[lower_key]
-                high = st.session_state[upper_key]
-            else:
-                low = np.quantile(img, st.session_state.lower_quantile)
-                high = np.quantile(img, st.session_state.upper_quantile)
-
-            l, h = st.slider(
-                "Select a values for thresholding",
-                min_value=0.0,
-                max_value=255.0,
-                value=(low, high),
-                step=0.1,
-                key="intensity",
-                on_change=handle_slider,
-                kwargs={"kl": lower_key, "kh": upper_key, "new_l": low, "new_h": high},
-                # disabled=st.session_state.image_controls
-            )
-            img_filtered = (img - l).clip(min=0).astype("int32")
-
-            res = regionprops_table(
-                seg,
-                intensity_image=img_filtered,
-                properties=("label",),
-                extra_properties=(
-                    is_positive,
-                    percentage_positive,
-                ),
-            )
-            df = merge_results(st.session_state.data, st.session_state.subsample, res)
+                st.button("Mark as bad (Q)", on_click=handle_bad_channel)
 
         # read in control elements via html
         components.html(read_html(), height=0, width=0)
 
-        with st.container():
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                with st.expander("Raw Data", expanded=True):
-                    st.image(
-                        normalise_image(img),
-                        use_column_width=True,
-                    )
-            with col2:
-                with st.expander("Filtered data", expanded=True):
-                    st.image(
-                        normalise_image(
-                            img_filtered, lower=l, upper=h, func=lambda img, val: val
-                        ),
-                        use_column_width=True,
-                    )
+        if st.session_state.two_columns:
+            with st.container():
+                col1, col2 = st.columns(2)
+                with col1:
+                    with st.expander("Filtered data", expanded=True):
+                        st.image(
+                            normalise_image(
+                                img_filtered,
+                                lower=lower,
+                                upper=upper,
+                                func=lambda img, val: val,
+                            ),
+                            use_column_width=True,
+                        )
 
-            with col3:
-                with st.expander("spatial_scatter", expanded=True):
-                    st.plotly_chart(
-                        plotly_scatter_gl(df),
-                        use_container_width=True,
-                    )
-
-        with st.container():
-            col4, col5, col6 = st.columns(3)
-            with col4:
-                with st.expander("spatial_scatter", expanded=True):
-                    if st.session_state.secondary_channel is not None:
+                with col2:
+                    with st.expander("spatial_scatter", expanded=True):
                         st.plotly_chart(
-                            plotly_scatter_marker_gl(df),
+                            plotly_scatter_gl(df),
                             use_container_width=True,
                         )
-            with col5:
-                with st.expander("Histogram", expanded=True):
-                    st.plotly_chart(plot_hist(df), use_container_width=True)
-            with col6:
-                with st.expander("is positive", expanded=True):
-                    st.plotly_chart(strip_plot(df), use_container_width=True)
+            with st.container():
+                col3, col4 = st.columns(2)
+                with col3:
+                    with st.expander("Raw Data", expanded=True):
+                        st.image(
+                            normalise_image(img),
+                            use_column_width=True,
+                        )
+                with col4:
+                    with st.expander("spatial_scatter", expanded=True):
+                        if st.session_state.secondary_channel is not None:
+                            st.plotly_chart(
+                                plotly_scatter_marker_gl(df),
+                                use_container_width=True,
+                            )
+            with st.container():
+                col5, col6 = st.columns(2)
+                with col5:
+                    with st.expander("Histogram", expanded=True):
+                        st.plotly_chart(plot_hist(df), use_container_width=True)
+                with col6:
+                    with st.expander("is positive", expanded=True):
+                        st.plotly_chart(strip_plot(df), use_container_width=True)
+
+        else:
+            with st.container():
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    with st.expander("Raw Data", expanded=True):
+                        st.image(
+                            normalise_image(img),
+                            use_column_width=True,
+                        )
+                with col2:
+                    with st.expander("Filtered data", expanded=True):
+                        st.image(
+                            normalise_image(
+                                img_filtered,
+                                lower=lower,
+                                upper=upper,
+                                func=lambda img, val: val,
+                            ),
+                            use_column_width=True,
+                        )
+
+                with col3:
+                    with st.expander("spatial_scatter", expanded=True):
+                        st.plotly_chart(
+                            plotly_scatter_gl(df),
+                            use_container_width=True,
+                        )
+
+            with st.container():
+                col4, col5, col6 = st.columns(3)
+                with col4:
+                    with st.expander("spatial_scatter", expanded=True):
+                        if st.session_state.secondary_channel is not None:
+                            st.plotly_chart(
+                                plotly_scatter_marker_gl(df),
+                                use_container_width=True,
+                            )
+                with col5:
+                    with st.expander("Histogram", expanded=True):
+                        st.plotly_chart(plot_hist(df), use_container_width=True)
+                with col6:
+                    with st.expander("is positive", expanded=True):
+                        st.plotly_chart(strip_plot(df), use_container_width=True)
 
 
 with st.sidebar:
@@ -326,6 +387,7 @@ with st.sidebar:
         st.toggle(
             "Show all samples", key="show_samples", on_change=handle_toggle_all_samples
         )
+        st.toggle("Two column layout", value=True, key="two_columns")
 
     if st.session_state.primary_channel is not None:
         st.write(
@@ -419,9 +481,9 @@ with st.sidebar:
         st.write(
             f"You are viewing {st.session_state.subsample if st.session_state.subsample != 0 else st.session_state.data.shape[0]} cells."
         )
-        
-        st.toggle("Show positive cells only", key="postive_cells")
-        
+
+        st.toggle("Show positive cells only", value=True, key="postive_cells")
+
         dot_col1, dot_col2 = st.columns(2)
         with dot_col1:
             _ = st.number_input(
@@ -437,7 +499,7 @@ with st.sidebar:
                 key="dotsize_pos",
                 format="%d",
             )
-            
+
         _ = st.number_input(
             "Step size",
             value=st.session_state.stepsize,

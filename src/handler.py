@@ -1,3 +1,4 @@
+import numpy as np
 import streamlit as st
 
 from database import (
@@ -212,10 +213,37 @@ def handle_sample_select():
             st.session_state.zarr_dict["segmentation"],
             st.session_state.selected_sample,
         )
-        st.session_state.slider_value = 0.5
-        st.session_state.status = get_status(
+
+        status_dict = get_status(
             st.session_state.selected_sample, st.session_state.primary_channel
         )
+        st.session_state.status = (
+            status_dict["status"] if isinstance(status_dict["status"], str) else "not reviewed"
+        )
+
+        if np.isnan(status_dict["threshold"]):
+            st.session_state.slider_value = 0.5
+        else:
+            st.session_state.slider_value = status_dict["threshold"]
+
+        lower_key = (
+            f"low_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
+        )
+        upper_key = f"high_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
+
+        if np.isnan(status_dict["lower"]):
+            st.session_state[lower_key] = np.quantile(
+                st.session_state.zarr, st.session_state.lower_quantile
+            )
+        else:
+            st.session_state[lower_key] = status_dict["lower"]
+
+        if np.isnan(status_dict["upper"]):
+            st.session_state[upper_key] = np.quantile(
+                st.session_state.zarr, st.session_state.upper_quantile
+            )
+        else:
+            st.session_state[upper_key] = status_dict["upper"]
 
         # print("out handle selected sample", st.session_state.selected_sample)
 
@@ -276,7 +304,8 @@ def handle_next_channel():
         #     sample, st.session_state.primary_channel
         # )
         st.session_state.slider_value = 0.5
-        st.session_state.status = get_status(sample, st.session_state.primary_channel)
+        status_dict = get_status(sample, st.session_state.primary_channel)
+        st.session_state.status = status_dict["status"]
 
         st.session_state.zarr = read_zarr_sample(
             st.session_state.zarr_dict[st.session_state.primary_channel],
@@ -360,14 +389,23 @@ def decrement_value():
     )
 
 
-def handle_update_threshold():
+def handle_update_threshold(lower, upper, cells):
+    print(lower, upper, cells)
     st.session_state.status = "reviewed"
+
     update_status(
         st.session_state.selected_sample,
         st.session_state.primary_channel,
+        st.session_state.status,
+        st.session_state.slider_value,
+        lower,
+        upper,
+        st.session_state.selected_reviewer,
+        cells,
     )
+    handle_next_sample()
     handle_primary_channel_select()
-    st.info("Switched sample")
+    # st.info("Switched sample")
 
 
 def handle_bad_channel():
@@ -375,7 +413,14 @@ def handle_bad_channel():
     update_status(
         st.session_state.selected_sample,
         st.session_state.primary_channel,
+        st.session_state.status,
+        float('nan'),
+        float('nan'),
+        float('nan'),
+        st.session_state.selected_reviewer,
+        float('nan'),        
     )
+    handle_next_sample()
     handle_primary_channel_select()
     st.info("Switched sample")
 

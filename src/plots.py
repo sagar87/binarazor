@@ -23,7 +23,9 @@ def plotly_scatter_gl(df):
                 x=df["X"],
                 y=df["Y"],
                 mode="markers",
-                marker=dict(size=st.session_state.dotsize_pos, color='red', line_width=0),
+                marker=dict(
+                    size=st.session_state.dotsize_pos, color="red", line_width=0
+                ),
             ),
             layout=layout,
         )
@@ -32,14 +34,14 @@ def plotly_scatter_gl(df):
             scaleanchor="x",
             scaleratio=1,
             autorange="reversed",
-        )        
-        
+        )
+
     else:
         boolean_array = df.is_positive.values.astype(int)
         color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
-        size_array = np.array([st.session_state.dotsize_neg, st.session_state.dotsize_pos])[
-            boolean_array
-        ].tolist()
+        size_array = np.array(
+            [st.session_state.dotsize_neg, st.session_state.dotsize_pos]
+        )[boolean_array].tolist()
         # Create the layout for the plot
         layout = go.Layout(
             # xaxis=dict(title="X Axis"),
