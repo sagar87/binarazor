@@ -101,7 +101,7 @@ if "dotsize_neg" not in st.session_state:
     st.session_state.dotsize_neg = 3
 
 if "dotsize_pos" not in st.session_state:
-    st.session_state.dotsize_pos = 6
+    st.session_state.dotsize_pos = 10
 
 if "lower_quantile" not in st.session_state:
     st.session_state.lower_quantile = 0.990
