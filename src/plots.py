@@ -33,7 +33,7 @@ def plotly_scatter_gl(df):
         fig.update_yaxes(
             scaleanchor="x",
             scaleratio=1,
-            autorange="reversed",
+            # autorange="reversed",
         )
 
     else:
@@ -66,7 +66,7 @@ def plotly_scatter_gl(df):
         fig.update_yaxes(
             scaleanchor="x",
             scaleratio=1,
-            autorange="reversed",
+            # autorange="reversed",
         )
 
     return fig

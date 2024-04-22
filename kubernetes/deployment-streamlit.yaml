@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: binarazor
-          image: sagar87/binarazor:latest
+          image: sagar87/binarazor:marc
           imagePullPolicy: Always
           ports:
             - containerPort: 8501

@@ -85,6 +85,9 @@ if "secondary_channels" not in st.session_state:
 if "secondary_channel" not in st.session_state:
     st.session_state.secondary_channel = None
 
+if "default_slider" not in st.session_state:
+    st.session_state.default_slider = 0.5
+
 if "slider_value" not in st.session_state:
     st.session_state.slider_value = 0.5
 
@@ -113,10 +116,10 @@ if "plot_height" not in st.session_state:
     st.session_state.plot_height = 1000
 
 if "postive_cells" not in st.session_state:
-    st.session_state.postive_cells = True
+    st.session_state.postive_cells = False
 
 if "two_columns" not in st.session_state:
-    st.session_state.two_columns = True
+    st.session_state.two_columns = False
 
 with st.container(border=False):
     with st.expander("session_state"):
@@ -387,7 +390,7 @@ with st.sidebar:
         st.toggle(
             "Show all samples", key="show_samples", on_change=handle_toggle_all_samples
         )
-        st.toggle("Two column layout", value=True, key="two_columns")
+        st.toggle("Two column layout", value=False, key="two_columns")
 
     if st.session_state.primary_channel is not None:
         st.write(
@@ -482,7 +485,7 @@ with st.sidebar:
             f"You are viewing {st.session_state.subsample if st.session_state.subsample != 0 else st.session_state.data.shape[0]} cells."
         )
 
-        st.toggle("Show positive cells only", value=True, key="postive_cells")
+        st.toggle("Show positive cells only", value=False, key="postive_cells")
 
         dot_col1, dot_col2 = st.columns(2)
         with dot_col1:
@@ -499,6 +502,16 @@ with st.sidebar:
                 key="dotsize_pos",
                 format="%d",
             )
+
+        _ = st.number_input(
+            "Default Threshold",
+            value=st.session_state.default_slider,
+            key="default_slider",
+            format="%.2f",
+            step=0.01,
+            min_value=0.0,
+            max_value=1.0,
+        )
 
         _ = st.number_input(
             "Step size",

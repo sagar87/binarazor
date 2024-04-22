@@ -222,7 +222,7 @@ def handle_sample_select():
         )
 
         if np.isnan(status_dict["threshold"]):
-            st.session_state.slider_value = 0.5
+            st.session_state.slider_value = st.session_state.default_slider
         else:
             st.session_state.slider_value = status_dict["threshold"]
 
@@ -303,7 +303,7 @@ def handle_next_channel():
         # st.session_state.slider_value = get_threshold(
         #     sample, st.session_state.primary_channel
         # )
-        st.session_state.slider_value = 0.5
+        st.session_state.slider_value = st.session_state.default_slider
         status_dict = get_status(sample, st.session_state.primary_channel)
         st.session_state.status = status_dict["status"]
 
@@ -341,7 +341,7 @@ def handle_previous_channel():
         # st.session_state.slider_value = get_threshold(
         #     sample, st.session_state.primary_channel
         # )
-        st.session_state.slider_value = 0.5
+        st.session_state.slider_value = st.session_state.default_slider
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
         # st.session_state.statistics = get_statistics(
         #     sample, st.session_state.primary_channel
