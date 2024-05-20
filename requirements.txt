@@ -96,7 +96,7 @@ sql_metadata==2.10.0
 sqlparse==0.4.4
 st-gsheets-connection==0.0.4
 stack-data==0.6.3
-streamlit==1.31.1
+streamlit==1.34.0
 streamlit-vega-lite==0.1.0
 tenacity==8.2.3
 tifffile==2024.2.12
@@ -117,3 +117,4 @@ xarray==2024.2.0
 yarl==1.9.4
 zarr==2.17.1
 zipp==3.17.0
+bokeh==2.4.3
