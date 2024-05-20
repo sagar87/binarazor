@@ -16,6 +16,9 @@ spec:
     spec:
       containers:
         - name: mongodb
+          volumeMounts:
+            - mountPath: /data/db
+              name: mo-data
           image: mongo:latest
           imagePullPolicy: Always
           ports:
@@ -38,6 +41,11 @@ spec:
                 secretKeyRef:
                   name: mongodb-secret
                   key: mongo-root-password
+      volumes:
+        - name: mo-data
+          persistentVolumeClaim:
+            claimName: mo-data-pvc
+      restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
