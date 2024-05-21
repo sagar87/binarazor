@@ -66,7 +66,7 @@ def show_sample(sample):
             sli1, sli2 = st.columns(2)
             with sli1:
                 lower, upper = st.slider(
-                    "Select a values for thresholding",
+                    "Select a values for filtering",
                     min_value=0.0,
                     max_value=255.0,
                     value=(
@@ -86,7 +86,7 @@ def show_sample(sample):
                 )
             with sli2:
                 slider = st.slider(
-                    "Threshold",
+                    "Select Threshold",
                     min_value=0.0,
                     max_value=1.0,
                     value=st.session_state[slider_key],
@@ -129,7 +129,7 @@ def show_sample(sample):
             but1, but2 = st.columns(2)
             with but1:
                 st.button(
-                    "Update Threshold (E)",
+                    "Save thresholds",
                     on_click=handle_update,
                     kwargs={
                         "sample": sample,
@@ -146,7 +146,7 @@ def show_sample(sample):
 
             with but2:
                 st.button(
-                    "Mark as bad (Q)",
+                    "Mark as bad",
                     on_click=handle_update,
                     kwargs={
                         "sample": sample,
