@@ -218,11 +218,13 @@ def handle_sample_select():
             st.session_state.selected_sample, st.session_state.primary_channel
         )
         st.session_state.status = (
-            status_dict["status"] if isinstance(status_dict["status"], str) else "not reviewed"
+            status_dict["status"]
+            if isinstance(status_dict["status"], str)
+            else "not reviewed"
         )
 
         if np.isnan(status_dict["threshold"]):
-            st.session_state.slider_value = 0.5
+            st.session_state.slider_value = st.session_state.default_slider
         else:
             st.session_state.slider_value = status_dict["threshold"]
 
@@ -303,7 +305,7 @@ def handle_next_channel():
         # st.session_state.slider_value = get_threshold(
         #     sample, st.session_state.primary_channel
         # )
-        st.session_state.slider_value = 0.5
+        st.session_state.slider_value = st.session_state.default_slider
         status_dict = get_status(sample, st.session_state.primary_channel)
         st.session_state.status = status_dict["status"]
 
@@ -341,7 +343,7 @@ def handle_previous_channel():
         # st.session_state.slider_value = get_threshold(
         #     sample, st.session_state.primary_channel
         # )
-        st.session_state.slider_value = 0.5
+        st.session_state.slider_value = st.session_state.default_slider
         st.session_state.status = get_status(sample, st.session_state.primary_channel)
         # st.session_state.statistics = get_statistics(
         #     sample, st.session_state.primary_channel
@@ -389,6 +391,10 @@ def decrement_value():
     )
 
 
+def handle_update(sample, channel, reviewer, threshold, lower, upper, cells, status):
+    update_status(sample, channel, status, threshold, lower, upper, reviewer, cells)
+
+
 def handle_update_threshold(lower, upper, cells):
     print(lower, upper, cells)
     st.session_state.status = "reviewed"
@@ -414,11 +420,11 @@ def handle_bad_channel():
         st.session_state.selected_sample,
         st.session_state.primary_channel,
         st.session_state.status,
-        float('nan'),
-        float('nan'),
-        float('nan'),
+        float("nan"),
+        float("nan"),
+        float("nan"),
         st.session_state.selected_reviewer,
-        float('nan'),        
+        float("nan"),
     )
     handle_next_sample()
     handle_primary_channel_select()
@@ -431,3 +437,9 @@ def handle_toggle_all_samples():
     # st.session_state.samples = get_samples(st.session_state.primary_channel, filter_samples=False if st.session_state.show_samples else True)
     handle_primary_channel_select()
     st.info("Showing all samples")
+
+
+def handle_page_change():
+    st.session_state.page = st.session_state.page
+    st.session_state.min_idx = st.session_state.page * st.session_state.size
+    st.session_state.max_idx = st.session_state.min_idx + st.session_state.size

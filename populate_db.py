@@ -52,7 +52,7 @@ if __name__ == "__main__":
     db = client[args.database]
     collection = db[args.collection]
     
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
     # Insert data into MongoDB
     result = collection.insert_many(data)

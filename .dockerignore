@@ -5,3 +5,4 @@ src/.env
 Dockerfile
 Dockerfile.prod
 *.zarr
+set_up_db.py

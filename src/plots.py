@@ -1,8 +1,28 @@
 import numpy as np
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from bokeh.plotting import figure
+
+
+def bokeh_scatter(df):
+    boolean_array = df.is_positive.values.astype(int)
+    color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
+    size_array = np.array([st.session_state.dotsize_neg, st.session_state.dotsize_pos])[
+        boolean_array
+    ].tolist()
+
+    p = figure()
+
+    p.circle(
+        df["X"],
+        df["Y"],
+        radius=size_array,
+        fill_color=color_array,
+        fill_alpha=1.0,
+        line_color=None,
+    )
+    return p
 
 
 def plotly_scatter_gl(df):
@@ -33,7 +53,7 @@ def plotly_scatter_gl(df):
         fig.update_yaxes(
             scaleanchor="x",
             scaleratio=1,
-            autorange="reversed",
+            # autorange="reversed",
         )
 
     else:
@@ -47,7 +67,7 @@ def plotly_scatter_gl(df):
             # xaxis=dict(title="X Axis"),
             # yaxis=dict(title="Y Axis"),
             scene=dict(aspectmode="data"),
-            height=st.session_state.plot_height
+            # height=st.session_state.plot_height
             # aspectmode='equal',  # Set aspect ratio to be equal
             # aspectratio=dict(x=1, y=1)  # Set the aspect ratio to 1:1
         )
@@ -60,13 +80,13 @@ def plotly_scatter_gl(df):
                 mode="markers",
                 marker=dict(size=size_array, color=color_array, line_width=0),
             ),
-            layout=layout,
+            # layout=layout,
         )
 
         fig.update_yaxes(
             scaleanchor="x",
             scaleratio=1,
-            autorange="reversed",
+            # autorange="reversed",
         )
 
     return fig
@@ -80,7 +100,7 @@ def plotly_scatter_marker_gl(df):
         xaxis=dict(title=st.session_state.secondary_channel),
         yaxis=dict(title=st.session_state.primary_channel),
         scene=dict(aspectmode="data"),
-        height=500
+        # height=500
         # aspectmode='equal',  # Set aspect ratio to be equal
         # aspectratio=dict(x=1, y=1)  # Set the aspect ratio to 1:1
     )
@@ -121,13 +141,6 @@ def plot_ecdf(img):
 
 
 def strip_plot(df):
-    # df = pd.DataFrame(results)
-    boolean_array = df.is_positive.values.astype(int)
-    color_array = np.array(["lightgrey", "red"])[boolean_array.astype(int)].tolist()
-
-    # fig = px.strip(df, x="is_positive", y="percentage_positive", color='is_positive',
-    #    color_discrete_sequence=['lightgrey', 'red'])
-
     fig = px.histogram(
         df,
         x="percentage_positive",

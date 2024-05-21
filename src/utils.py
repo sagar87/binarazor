@@ -4,11 +4,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import streamlit as st
-from dotenv import load_dotenv
-
-load_dotenv(".env")
-
-HTML_PATH = os.getenv("HTML_PATH")
+from skimage.measure import regionprops_table
 
 
 def read_html():
@@ -32,10 +28,28 @@ def subsample_data(data, subsample):
     return df
 
 
+@st.cache_data
+def regionprops(seg, img_filtered, slider):
+    def is_positive(x, y, slider_value=slider):
+        return is_positive_individual(x, y, slider_value=slider_value)
+
+    res = regionprops_table(
+        seg,
+        intensity_image=img_filtered,
+        properties=("label",),
+        extra_properties=(
+            is_positive,
+            percentage_positive,
+        ),
+    )
+    # res ['is_positive'] = res["<lambda>"]
+    return res
+
+
 def merge_results(data, subsample, results):
     df = subsample_data(data, subsample)
     results = pd.DataFrame(results)
-    return df.merge(results, left_on="cell", right_on="label", how="left")
+    return df.merge(results, left_on="cell", right_on="label", how="left").fillna(False)
 
 
 def is_positive(regionmask: np.ndarray, intensity_image: np.ndarray) -> float:
@@ -47,6 +61,19 @@ def is_positive(regionmask: np.ndarray, intensity_image: np.ndarray) -> float:
     return (intensity_image[regionmask] > 0).sum() / (
         regionmask == 1
     ).sum() > st.session_state.slider_value
+
+
+def is_positive_individual(
+    regionmask: np.ndarray, intensity_image: np.ndarray, slider_value=0.5
+) -> float:
+    """
+    Computes whether the cell is positive or not
+    """
+    # regionmask
+
+    return (intensity_image[regionmask] > 0).sum() / (
+        regionmask == 1
+    ).sum() > slider_value
 
 
 def percentage_positive(regionmask: np.ndarray, intensity_image: np.ndarray) -> float:

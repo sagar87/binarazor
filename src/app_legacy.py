@@ -2,12 +2,12 @@ import numpy as np
 import streamlit as st
 
 st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide")
-from functools import partial
 
 import streamlit.components.v1 as components
 from skimage.measure import regionprops_table
 
-from database import get_reviewers
+from database import get_reviewers, get_sample_expression, get_status
+from drive import read_zarr_sample
 from handler import (
     decrement_value,
     handle_bad_channel,
@@ -24,13 +24,21 @@ from handler import (
     handle_update_threshold,
     increment_value,
 )
-from plots import plot_hist, plotly_scatter_gl, plotly_scatter_marker_gl, strip_plot
+from pagination import paginator
+from plots import (
+    bokeh_scatter,
+    plot_hist,
+    plotly_scatter_gl,
+    plotly_scatter_marker_gl,
+    strip_plot,
+)
 from utils import (
     is_positive,
     merge_results,
     normalise_image,
     percentage_positive,
     read_html,
+    regionprops,
 )
 
 # Session state
@@ -85,6 +93,9 @@ if "secondary_channels" not in st.session_state:
 if "secondary_channel" not in st.session_state:
     st.session_state.secondary_channel = None
 
+if "default_slider" not in st.session_state:
+    st.session_state.default_slider = 0.5
+
 if "slider_value" not in st.session_state:
     st.session_state.slider_value = 0.5
 
@@ -98,7 +109,7 @@ if "dotsize_neg" not in st.session_state:
     st.session_state.dotsize_neg = 3
 
 if "dotsize_pos" not in st.session_state:
-    st.session_state.dotsize_pos = 6
+    st.session_state.dotsize_pos = 10
 
 if "lower_quantile" not in st.session_state:
     st.session_state.lower_quantile = 0.990
@@ -113,10 +124,19 @@ if "plot_height" not in st.session_state:
     st.session_state.plot_height = 1000
 
 if "postive_cells" not in st.session_state:
-    st.session_state.postive_cells = True
+    st.session_state.postive_cells = False
 
 if "two_columns" not in st.session_state:
-    st.session_state.two_columns = True
+    st.session_state.two_columns = False
+
+if "multisample" not in st.session_state:
+    st.session_state.multisample = False
+
+if "page_number" not in st.session_state:
+    st.session_state.page_number = 0
+
+if "selected_samples" not in st.session_state:
+    st.session_state.selected_samples = None
 
 with st.container(border=False):
     with st.expander("session_state"):
@@ -127,7 +147,142 @@ with st.container(border=False):
                 st.write(var, st.session_state[var])
 
 with st.container():
-    if st.session_state.selected_sample is not None:
+    if st.session_state.multisample:
+        st.header(f"Page number {st.session_state.page_number}")
+        st.write(st.session_state.selected_samples)
+        # with st.container(border):
+        #     lower_key = f"low_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
+        #     upper_key = f"high_{st.session_state.selected_sample}_{st.session_state.primary_channel}"
+
+        #     lower, upper = st.slider(
+        #         "Select a values for thresholding",
+        #         min_value=0.0,
+        #         max_value=255.0,
+        #         value=(st.session_state[lower_key], st.session_state[upper_key]),
+        #         step=1.,
+        #         key="intensity",
+        #         on_change=handle_slider,
+        #         kwargs={
+        #             "kl": lower_key,
+        #             "kh": upper_key,
+        #             "new_l": st.session_state[lower_key],
+        #             "new_h": st.session_state[upper_key],
+        #         },
+        #         disabled=True if st.session_state.status == "bad" else False,
+        #     )
+
+        if st.session_state.selected_samples is not None:
+            for sample in st.session_state.selected_samples:
+                with st.container(border=True):
+                    seg = read_zarr_sample(
+                        st.session_state.zarr_dict["segmentation"], sample
+                    )
+                    img = read_zarr_sample(
+                        st.session_state.zarr_dict[st.session_state.primary_channel],
+                        sample,
+                    )
+                    st.write(sample)
+                    col1, col2, col3 = st.columns(3)
+                    lower_key = f"low_{sample}_{st.session_state.primary_channel}"
+                    upper_key = f"high_{sample}_{st.session_state.primary_channel}"
+
+                    status_dict = get_status(sample, st.session_state.primary_channel)
+                    status = (
+                        status_dict["status"]
+                        if isinstance(status_dict["status"], str)
+                        else "not reviewed"
+                    )
+
+                    if np.isnan(status_dict["lower"]):
+                        st.session_state[lower_key] = np.quantile(
+                            img, st.session_state.lower_quantile
+                        )
+                    else:
+                        st.session_state[lower_key] = status_dict["lower"]
+
+                    if np.isnan(status_dict["upper"]):
+                        st.session_state[upper_key] = np.quantile(
+                            img, st.session_state.upper_quantile
+                        )
+                    else:
+                        st.session_state[upper_key] = status_dict["upper"]
+
+                    lower, upper = st.slider(
+                        "Select a values for thresholding",
+                        min_value=0.0,
+                        max_value=255.0,
+                        value=(
+                            st.session_state[lower_key],
+                            st.session_state[upper_key],
+                        ),
+                        step=1.0,
+                        key=f"intensity_{sample}_{st.session_state.primary_channel}",
+                        on_change=handle_slider,
+                        kwargs={
+                            "kl": lower_key,
+                            "kh": upper_key,
+                            "new_l": st.session_state[lower_key],
+                            "new_h": st.session_state[upper_key],
+                        },
+                        disabled=True if status == "bad" else False,
+                    )
+                    if (
+                        f"slider_value_{sample}_{st.session_state.primary_channel}"
+                        not in st.session_state
+                    ):
+                        st.session_state[
+                            f"slider_value_{sample}_{st.session_state.primary_channel}"
+                        ] = 0.5
+
+                    slider = st.slider(
+                        "Threshold",
+                        min_value=0.0,
+                        max_value=1.0,
+                        step=st.session_state.stepsize,
+                        key=f"slider_value_{sample}_{st.session_state.primary_channel}",
+                        disabled=True if status == "bad" else False,
+                    )
+
+                    img_filtered = (img - lower).clip(min=0).astype("int32")
+                    # seg_filtered = seg.copy()
+                    # seg_filtered[img_filtered == 0] = 0
+                    data = get_sample_expression(
+                        sample, st.session_state.primary_channel, "CD3"
+                    )
+                    with col1:
+                        with st.expander("Raw Data", expanded=True):
+                            st.image(
+                                normalise_image(img),
+                                use_column_width=True,
+                            )
+                    with col2:
+                        with st.expander("Filtered data", expanded=True):
+                            st.image(
+                                normalise_image(
+                                    img_filtered,
+                                    lower=lower,
+                                    upper=upper,
+                                    func=lambda img, val: val,
+                                ),
+                                use_column_width=True,
+                            )
+
+                    # st.write(res)
+                    res = regionprops(seg, img_filtered, slider)
+                    df = merge_results(data, st.session_state.subsample, res)
+
+                    with col3:
+                        with st.expander("Filtered", expanded=True):
+                            st.bokeh_chart(bokeh_scatter(df), use_container_width=True)
+                        # st.plotly_chart(
+                        #         plotly_scatter_gl(df),
+                        #         use_container_width=True,
+                        #     )
+
+    if (
+        st.session_state.selected_sample is not None
+        and not st.session_state.multisample
+    ):
         if st.session_state.status == "not reviewed":
             icon = ":question:"
         elif st.session_state.status == "bad":
@@ -166,7 +321,7 @@ with st.container():
                 min_value=0.0,
                 max_value=255.0,
                 value=(st.session_state[lower_key], st.session_state[upper_key]),
-                step=1.,
+                step=1.0,
                 key="intensity",
                 on_change=handle_slider,
                 kwargs={
@@ -190,6 +345,7 @@ with st.container():
                 ),
             )
             df = merge_results(st.session_state.data, st.session_state.subsample, res)
+
         with st.container(border=True):
             (
                 bcol1,
@@ -234,7 +390,7 @@ with st.container():
                     disabled=True
                     if st.session_state.selected_sample_index == 0
                     else False,
-                )                
+                )
 
             with bcol4:
                 st.button(
@@ -244,12 +400,10 @@ with st.container():
                     if st.session_state.selected_sample_index
                     == (len(st.session_state.samples) - 1)
                     else False,
-                )                
-                
+                )
 
             with bcol5:
                 st.button("Decrement threshold (A)", on_click=decrement_value)
-                
 
             with bcol6:
                 st.button("Increment threshold (D)", on_click=increment_value)
@@ -344,22 +498,6 @@ with st.container():
                             use_container_width=True,
                         )
 
-            with st.container():
-                col4, col5, col6 = st.columns(3)
-                with col4:
-                    with st.expander("spatial_scatter", expanded=True):
-                        if st.session_state.secondary_channel is not None:
-                            st.plotly_chart(
-                                plotly_scatter_marker_gl(df),
-                                use_container_width=True,
-                            )
-                with col5:
-                    with st.expander("Histogram", expanded=True):
-                        st.plotly_chart(plot_hist(df), use_container_width=True)
-                with col6:
-                    with st.expander("is positive", expanded=True):
-                        st.plotly_chart(strip_plot(df), use_container_width=True)
-
 
 with st.sidebar:
 
@@ -382,12 +520,17 @@ with st.sidebar:
             on_change=handle_primary_channel_select,
             disabled=st.session_state.primary_channel_fixed,
         )
+        if st.session_state.primary_channel is not None:
+            st.toggle("Multi Sample", value=False, key="multisample")
 
-        st.toggle("Fix primary channel", key="primary_channel_fixed")
-        st.toggle(
-            "Show all samples", key="show_samples", on_change=handle_toggle_all_samples
-        )
-        st.toggle("Two column layout", value=True, key="two_columns")
+            if not st.session_state.multisample:
+                st.toggle("Fix primary channel", key="primary_channel_fixed")
+                st.toggle(
+                    "Show all samples",
+                    key="show_samples",
+                    on_change=handle_toggle_all_samples,
+                )
+                st.toggle("Two column layout", value=False, key="two_columns")
 
     if st.session_state.primary_channel is not None:
         st.write(
@@ -408,7 +551,7 @@ with st.sidebar:
             "/",
             st.session_state.statistics["total"],
         )
-        if len(st.session_state.samples) != 0:
+        if len(st.session_state.samples) != 0 and not st.session_state.multisample:
             # if not st.session_state.show_samples:
             # current_sample = st.session_state.selected_sample
             _ = st.selectbox(
@@ -430,7 +573,10 @@ with st.sidebar:
 
         # st.write("Primary channel fixed", st.session_state.primary_channel_fixed)
 
-    if st.session_state.selected_sample is not None:
+    if (
+        st.session_state.selected_sample is not None
+        and not st.session_state.multisample
+    ):
 
         st.write(
             "Positive cells", res["is_positive"].sum(), "/", res["is_positive"].shape[0]
@@ -482,7 +628,7 @@ with st.sidebar:
             f"You are viewing {st.session_state.subsample if st.session_state.subsample != 0 else st.session_state.data.shape[0]} cells."
         )
 
-        st.toggle("Show positive cells only", value=True, key="postive_cells")
+        st.toggle("Show positive cells only", value=False, key="postive_cells")
 
         dot_col1, dot_col2 = st.columns(2)
         with dot_col1:
@@ -499,6 +645,16 @@ with st.sidebar:
                 key="dotsize_pos",
                 format="%d",
             )
+
+        _ = st.number_input(
+            "Default Threshold",
+            value=st.session_state.default_slider,
+            key="default_slider",
+            format="%.2f",
+            step=0.01,
+            min_value=0.0,
+            max_value=1.0,
+        )
 
         _ = st.number_input(
             "Step size",
@@ -518,4 +674,13 @@ with st.sidebar:
             step=1,
             min_value=0,
             max_value=2000,
+        )
+
+    if st.session_state.multisample:
+        paginator(
+            "Select page",
+            st.session_state.samples,
+            items_per_page=10,
+            on_sidebar=True,
+            page_number_key="page_number",
         )
