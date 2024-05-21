@@ -4,8 +4,8 @@ st.set_page_config(page_title="Binarazor", page_icon="👋", layout="wide")
 
 
 from container import show_sample
-from database import get_channels, get_reviewers, get_samples
-from drive import get_zarr_dict, read_zarr_sample
+from database import get_all_samples, get_channels, get_reviewers
+from drive import get_zarr_dict
 from pagination import paginator
 
 # Session state
@@ -25,9 +25,7 @@ if "primary_channel" not in st.session_state:
     st.session_state.primary_channel = st.session_state.primary_channels[0]
 
 if "samples" not in st.session_state:
-    st.session_state.samples = get_samples(
-        st.session_state.primary_channel, filter_samples=False
-    )
+    st.session_state.samples = get_all_samples()
 
 if "size" not in st.session_state:
     st.session_state.size = 30
@@ -83,18 +81,6 @@ with st.container():
         st.session_state.min_idx : st.session_state.max_idx
     ]:
         show_sample(sample)
-
-        # with col2:
-        #     with st.expander("Filtered data", expanded=True):
-        #         st.image(
-        #             normalise_image(
-        #                 img_filtered,
-        #                 lower=lower,
-        #                 upper=upper,
-        #                 func=lambda img, val: val,
-        #             ),
-        #             use_column_width=True,
-        #         )
 
 
 with st.sidebar:

@@ -2,7 +2,6 @@ import numpy as np
 import streamlit as st
 
 st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide")
-from functools import partial
 
 import streamlit.components.v1 as components
 from skimage.measure import regionprops_table

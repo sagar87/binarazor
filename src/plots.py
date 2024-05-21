@@ -1,27 +1,16 @@
 import numpy as np
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from bokeh.plotting import figure, show
+from bokeh.plotting import figure
 
 
 def bokeh_scatter(df):
-    N = 4000
-    x = np.random.random(size=N) * 100
-    y = np.random.random(size=N) * 100
     boolean_array = df.is_positive.values.astype(int)
     color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
     size_array = np.array([st.session_state.dotsize_neg, st.session_state.dotsize_pos])[
         boolean_array
     ].tolist()
-
-    radii = np.random.random(size=N) * 1.5
-    colors = np.array(
-        [(r, g, 150) for r, g in zip(50 + 2 * x, 30 + 2 * y)], dtype="uint8"
-    )
-
-    TOOLS = "hover,crosshair,pan,wheel_zoom,zoom_in,zoom_out,box_zoom,undo,redo,reset,tap,save,box_select,poly_select,lasso_select,examine,help"
 
     p = figure()
 
@@ -152,13 +141,6 @@ def plot_ecdf(img):
 
 
 def strip_plot(df):
-    # df = pd.DataFrame(results)
-    boolean_array = df.is_positive.values.astype(int)
-    color_array = np.array(["lightgrey", "red"])[boolean_array.astype(int)].tolist()
-
-    # fig = px.strip(df, x="is_positive", y="percentage_positive", color='is_positive',
-    #    color_discrete_sequence=['lightgrey', 'red'])
-
     fig = px.histogram(
         df,
         x="percentage_positive",

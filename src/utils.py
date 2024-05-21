@@ -4,12 +4,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import streamlit as st
-from dotenv import load_dotenv
 from skimage.measure import regionprops_table
-
-load_dotenv(".env")
-
-HTML_PATH = os.getenv("HTML_PATH")
 
 
 def read_html():

@@ -1,4 +1,3 @@
-import numpy as np
 import streamlit as st
 
 from handler import handle_page_change
@@ -48,7 +47,7 @@ def paginator(label, items, items_per_page=10, on_sidebar=True, page_number_key=
     n_pages = len(items)
     n_pages = (len(items) - 1) // items_per_page + 1
     page_format_func = lambda i: "Page %s" % i
-    page_number = location.selectbox(
+    _ = location.selectbox(
         label,
         range(n_pages),
         format_func=page_format_func,
@@ -62,35 +61,3 @@ def paginator(label, items, items_per_page=10, on_sidebar=True, page_number_key=
     # import itertools
     # st.session_state.selected_samples = items[min_index:max_index]
     # return itertools.islice(enumerate(items), st.session_state.min_idx, st.session_state.max_idx)
-
-
-def demonstrate_paginator():
-    fruit_list = [
-        "Kiwifruit",
-        "Honeydew",
-        "Cherry",
-        "Honeyberry",
-        "Pear",
-        "Apple",
-        "Nectarine",
-        "Soursop",
-        "Pineapple",
-        "Satsuma",
-        "Fig",
-        "Huckleberry",
-        "Coconut",
-        "Plantain",
-        "Jujube",
-        "Guava",
-        "Clementine",
-        "Grape",
-        "Tayberry",
-        "Salak",
-        "Raspberry",
-        "Loquat",
-        "Nance",
-        "Peach",
-        "Akee",
-    ]
-    for i, fruit in paginator("Select a fruit page", fruit_list):
-        st.write("%s. **%s**" % (i, fruit))
