@@ -69,6 +69,9 @@ if "dotsize_pos" not in st.session_state:
 
 if "postive_cells" not in st.session_state:
     st.session_state.postive_cells = False
+    
+if "two_columns" not in st.session_state:
+    st.session_state.two_columns = False    
 
 if App.ENV == "development":
     with st.container(border=False):
@@ -113,6 +116,8 @@ with st.sidebar:
         "/",
         st.session_state.statistics["total"],
     )
+    
+    st.toggle("Two column layout (beta)", value=False, key="two_columns")
 
     _ = st.selectbox(
         "Select Reviewer:",
@@ -177,6 +182,7 @@ with st.sidebar:
             max_value=10,
             key="dotsize_neg",
             format="%d",
+            disabled=st.session_state.two_columns
         )
     with dot_col2:
         _ = st.number_input(

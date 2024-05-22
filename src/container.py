@@ -96,67 +96,93 @@ def show_sample(sample):
                 )
 
         img_filtered = (img - lower).clip(min=0).astype("int32")
+        if st.session_state.two_columns:
+            col1, col2 = st.columns(2)
+            with col1:
+                with st.container(border=True):
+                    img_norm = normalise_image(img)
+                    st.image(
+                        img_norm,
+                        use_column_width=True,
+                    )
+            # st.write(res)
+            
+            data = get_sample_expression(sample, st.session_state.primary_channel, "CD3")
+            res = regionprops(seg, img_filtered, slider)
+            df = merge_results(data, st.session_state.subsample, res) 
+                                
+            with col2:
+                with st.container(border=True):
+                    img_norm = normalise_image(
+                            img_filtered,
+                            lower=lower,
+                            upper=upper,
+                            func=lambda img, val: val,
+                        )
+                    st.bokeh_chart(bokeh_scatter(df, img_norm), use_container_width=True)
+        else:
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                with st.container(border=True):
+                    img_norm = normalise_image(img)
+                    st.image(
+                        img_norm,
+                        use_column_width=True,
+                    )
+            with col2:
+                with st.container(border=True):
+                    st.image(
+                        normalise_image(
+                            img_filtered,
+                            lower=lower,
+                            upper=upper,
+                            func=lambda img, val: val,
+                        ),
+                        use_column_width=True,
+                    )
+            # st.write(res)
+            data = get_sample_expression(sample, st.session_state.primary_channel, "CD3")
+            res = regionprops(seg, img_filtered, slider)
+            df = merge_results(data, st.session_state.subsample, res)
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
+            with col3:
+                with st.container(border=True):
+                    st.bokeh_chart(bokeh_scatter(df), use_container_width=True)
+                    # st.plotly_chart(plotly_scatter_gl(df), use_container_width=True)
+
             with st.container(border=True):
-                st.image(
-                    normalise_image(img),
-                    use_column_width=True,
-                )
-        with col2:
-            with st.container(border=True):
-                st.image(
-                    normalise_image(
-                        img_filtered,
-                        lower=lower,
-                        upper=upper,
-                        func=lambda img, val: val,
-                    ),
-                    use_column_width=True,
-                )
-        # st.write(res)
-        data = get_sample_expression(sample, st.session_state.primary_channel, "CD3")
-        res = regionprops(seg, img_filtered, slider)
-        df = merge_results(data, st.session_state.subsample, res)
+                but1, but2 = st.columns(2)
+                with but1:
+                    st.button(
+                        "Save thresholds",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": st.session_state.primary_channel,
+                            "reviewer": st.session_state.selected_reviewer,
+                            "threshold": slider,
+                            "lower": lower,
+                            "upper": upper,
+                            "cells": df[df.is_positive].label.tolist(),
+                            "status": "reviewed",
+                        },
+                        key=f"update_{sample}_{st.session_state.primary_channel}",
+                    )
 
-        with col3:
-            with st.container(border=True):
-                st.bokeh_chart(bokeh_scatter(df), use_container_width=True)
-                # st.plotly_chart(plotly_scatter_gl(df), use_container_width=True)
-
-        with st.container(border=True):
-            but1, but2 = st.columns(2)
-            with but1:
-                st.button(
-                    "Save thresholds",
-                    on_click=handle_update,
-                    kwargs={
-                        "sample": sample,
-                        "channel": st.session_state.primary_channel,
-                        "reviewer": st.session_state.selected_reviewer,
-                        "threshold": slider,
-                        "lower": lower,
-                        "upper": upper,
-                        "cells": df[df.is_positive].label.tolist(),
-                        "status": "reviewed",
-                    },
-                    key=f"update_{sample}_{st.session_state.primary_channel}",
-                )
-
-            with but2:
-                st.button(
-                    "Mark as bad",
-                    on_click=handle_update,
-                    kwargs={
-                        "sample": sample,
-                        "channel": st.session_state.primary_channel,
-                        "reviewer": st.session_state.selected_reviewer,
-                        "threshold": float("nan"),
-                        "lower": float("nan"),
-                        "upper": float("nan"),
-                        "cells": float("nan"),
-                        "status": "bad",
-                    },
-                    key=f"bad_{sample}_{st.session_state.primary_channel}",
-                )
+                with but2:
+                    st.button(
+                        "Mark as bad",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": st.session_state.primary_channel,
+                            "reviewer": st.session_state.selected_reviewer,
+                            "threshold": float("nan"),
+                            "lower": float("nan"),
+                            "upper": float("nan"),
+                            "cells": float("nan"),
+                            "status": "bad",
+                        },
+                        key=f"bad_{sample}_{st.session_state.primary_channel}",
+                    )
