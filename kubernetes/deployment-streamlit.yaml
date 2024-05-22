@@ -30,6 +30,11 @@ spec:
           env:
             - name: ENV
               value: "production"
+            - name: PROJECT
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: PROJECT
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -50,46 +55,26 @@ spec:
                 secretKeyRef:
                   name: binarazor-credentials
                   key: AWS_PATH
-            - name: PROJECT_ID
+            - name: X_RANGE_MIN
               valueFrom:
                 secretKeyRef:
                   name: binarazor-credentials
-                  key: PROJECT_ID
-            - name: PRIVATE_KEY_ID
+                  key: X_RANGE_MIN
+            - name: X_RANGE_MAX
               valueFrom:
                 secretKeyRef:
                   name: binarazor-credentials
-                  key: PRIVATE_KEY_ID
-            - name: PRIVATE_KEY
+                  key: X_RANGE_MAX
+            - name: Y_RANGE_MIN
               valueFrom:
                 secretKeyRef:
                   name: binarazor-credentials
-                  key: PRIVATE_KEY
-            - name: CLIENT_EMAIL
+                  key: Y_RANGE_MIN
+            - name: Y_RANGE_MAX
               valueFrom:
                 secretKeyRef:
                   name: binarazor-credentials
-                  key: CLIENT_EMAIL
-            - name: CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: CLIENT_ID
-            - name: AUTH_PROVIDER_X509_CERT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: AUTH_PROVIDER_X509_CERT_URL
-            - name: CLIENT_X509_CERT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: CLIENT_X509_CERT_URL
-            - name: APP_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: APP_KEY
+                  key: Y_RANGE_MAX
             - name: MONGO_ROOT_USER
               valueFrom:
                 secretKeyRef:

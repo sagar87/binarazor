@@ -31,3 +31,9 @@ class App:
     DEFAULT_SLIDER_STEPSIZE = os.getenv("DEFAULT_SLIDER_STEPSIZE", 0.05)
     DEFAULT_UPPER_QUANTILE = os.getenv("DEFAULT_UPPER_QUANTILE", 0.998)
     DEFAULT_LOWER_QUANTILE = os.getenv("DEFAULT_LOWER_QUANTILE", 0.990)
+    
+class Plot:
+    X_RANGE_MIN = os.getenv("X_RANGE_MIN", None)
+    X_RANGE_MAX = os.getenv("X_RANGE_MAX", None)
+    Y_RANGE_MIN = os.getenv("Y_RANGE_MIN", None)
+    Y_RANGE_MAX = os.getenv("Y_RANGE_MAX", None)

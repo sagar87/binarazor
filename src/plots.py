@@ -3,7 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from bokeh.plotting import figure
-
+from config import Plot
 
 def bokeh_scatter(df):
     boolean_array = df.is_positive.values.astype(int)
@@ -12,7 +12,20 @@ def bokeh_scatter(df):
         boolean_array
     ].tolist()
 
-    p = figure()
+    if Plot.X_RANGE_MIN is not None and Plot.X_RANGE_MAX is not None:
+        x_range=(int(Plot.X_RANGE_MIN), int(Plot.X_RANGE_MAX))
+    else:
+        x_range=None
+
+    if Plot.Y_RANGE_MIN is not None and Plot.Y_RANGE_MAX is not None:
+        y_range=(int(Plot.Y_RANGE_MIN), int(Plot.Y_RANGE_MAX))
+    else:
+        y_range=None
+        
+    p = figure(
+        x_range=x_range,
+        y_range=y_range
+    )
 
     p.circle(
         df["X"],
