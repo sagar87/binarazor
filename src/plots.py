@@ -3,42 +3,38 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from bokeh.plotting import figure
-from config import Plot
+
 
 def bokeh_scatter(df, image=None):
     if image is not None:
-        df = df[df.is_positive]    
+        df = df[df.is_positive]
     boolean_array = df.is_positive.values.astype(int)
     color_array = np.array(["lightgrey", "red"])[boolean_array].tolist()
     size_array = np.array([st.session_state.dotsize_neg, st.session_state.dotsize_pos])[
         boolean_array
     ].tolist()
 
-    if Plot.X_RANGE_MIN is not None and Plot.X_RANGE_MAX is not None:
-        x_range=(int(Plot.X_RANGE_MIN), int(Plot.X_RANGE_MAX))
-    else:
-        x_range=None
+    p = figure(match_aspect=True, sizing_mode="stretch_both")
 
-    if Plot.Y_RANGE_MIN is not None and Plot.Y_RANGE_MAX is not None:
-        y_range=(int(Plot.Y_RANGE_MIN), int(Plot.Y_RANGE_MAX))
-    else:
-        y_range=None
-        
-    p = figure(
-        x_range=x_range,
-        y_range=y_range
-    )
     if image is not None:
-        p.image(image=[image[::-1, :]], x=[0], y=[0], dw=[image.shape[1]], dh=[image.shape[0]])
-    
+        p.image(
+            image=[image[::-1, :]],
+            x=[0],
+            y=[0],
+            dw=[image.shape[1]],
+            dh=[image.shape[0]],
+        )
+        p.x_range.range_padding = 0
+        p.y_range.range_padding = 0
+
     if image is not None:
         p.circle(
             df["X"],
             df["Y"],
             radius=size_array,
             fill_color=color_array,
-            fill_alpha=.1,
-            line_color='red',
+            fill_alpha=0.1,
+            line_color="red",
         )
     else:
         p.circle(
@@ -46,17 +42,11 @@ def bokeh_scatter(df, image=None):
             df["Y"],
             radius=size_array,
             fill_color=color_array,
-            fill_alpha=1.,
+            fill_alpha=1.0,
             line_color=None,
         )
-    # p.min_border=0
+
     p.axis.visible = False
-    p.x_range.range_padding = 0
-    p.y_range.range_padding = 0
-    p.min_border_left = 0
-    p.min_border_right = 0
-    p.min_border_top = 0
-    p.min_border_bottom = 0
     return p
 
 

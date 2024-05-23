@@ -55,26 +55,6 @@ spec:
                 secretKeyRef:
                   name: binarazor-credentials
                   key: AWS_PATH
-            - name: X_RANGE_MIN
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: X_RANGE_MIN
-            - name: X_RANGE_MAX
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: X_RANGE_MAX
-            - name: Y_RANGE_MIN
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: Y_RANGE_MIN
-            - name: Y_RANGE_MAX
-              valueFrom:
-                secretKeyRef:
-                  name: binarazor-credentials
-                  key: Y_RANGE_MAX
             - name: MONGO_ROOT_USER
               valueFrom:
                 secretKeyRef:
