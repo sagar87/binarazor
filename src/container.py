@@ -32,6 +32,11 @@ def show_sample(sample):
         header_string += f' | reviewed by {status_dict["reviewer"]}'
 
     with st.expander(header_string, True if status == "not reviewed" else False):
+        lower_key = f"low_{sample}_{st.session_state.primary_channel}"
+        upper_key = f"high_{sample}_{st.session_state.primary_channel}"
+        slider_key = f"slider_{sample}_{st.session_state.primary_channel}"
+        
+        
         if status == "not reviewed":
             seg = read_zarr_sample(st.session_state.zarr_dict["segmentation"], sample)
             img = read_zarr_sample(
@@ -39,9 +44,6 @@ def show_sample(sample):
                 sample,
             )
 
-            lower_key = f"low_{sample}_{st.session_state.primary_channel}"
-            upper_key = f"high_{sample}_{st.session_state.primary_channel}"
-            slider_key = f"slider_{sample}_{st.session_state.primary_channel}"
 
             if np.isnan(status_dict["lower"]):
                 st.session_state[lower_key] = np.quantile(
@@ -201,9 +203,9 @@ def show_sample(sample):
                     "sample": sample,
                     "channel": st.session_state.primary_channel,
                     "reviewer": float("nan"),
-                    "threshold": float("nan"),
-                    "lower": float("nan"),
-                    "upper": float("nan"),
+                    "threshold": st.session_state[slider_key],
+                    "lower": st.session_state[lower_key],
+                    "upper": st.session_state[upper_key],
                     "cells": float("nan"),
                     "status": float("nan"),
                 },
