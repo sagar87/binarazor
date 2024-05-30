@@ -3,7 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from bokeh.plotting import figure
-
+from bokeh.models import WheelZoomTool
 
 def bokeh_scatter(df, image=None):
     if image is not None:
@@ -26,6 +26,7 @@ def bokeh_scatter(df, image=None):
         )
         p.x_range.range_padding = 0
         p.y_range.range_padding = 0
+        p.toolbar.active_scroll = p.select_one(WheelZoomTool)
 
     if image is not None:
         p.circle(
