@@ -35,15 +35,13 @@ def show_sample(sample):
         lower_key = f"low_{sample}_{st.session_state.primary_channel}"
         upper_key = f"high_{sample}_{st.session_state.primary_channel}"
         slider_key = f"slider_{sample}_{st.session_state.primary_channel}"
-        
-        
+
         if status == "not reviewed":
             seg = read_zarr_sample(st.session_state.zarr_dict["segmentation"], sample)
             img = read_zarr_sample(
                 st.session_state.zarr_dict[st.session_state.primary_channel],
                 sample,
             )
-
 
             if np.isnan(status_dict["lower"]):
                 st.session_state[lower_key] = np.quantile(
