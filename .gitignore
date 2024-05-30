@@ -6,7 +6,6 @@ secret.yml
 secrets.toml
 __pycache__
 .DS_Store
-database.py
 ingress-*
 data
 set_up_db.py
