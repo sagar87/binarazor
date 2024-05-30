@@ -9,9 +9,9 @@ from database import (
     get_statistics,
     get_status,
     update_status,
+    paginated_samples
 )
 from drive import get_image_dict, get_zarr_dict, read_zarr_sample
-
 
 # handler
 def reset_session_state(keys, value=None):
@@ -439,7 +439,8 @@ def handle_toggle_all_samples():
     st.info("Showing all samples")
 
 
-def handle_page_change():
+def handle_page_change(page_size):
     st.session_state.page = st.session_state.page
-    st.session_state.min_idx = st.session_state.page * st.session_state.size
-    st.session_state.max_idx = st.session_state.min_idx + st.session_state.size
+    st.session_state.samples = paginated_samples(st.session_state.page + 1, page_size)
+    # st.session_state.min_idx = st.session_state.page * st.session_state.size
+    # st.session_state.max_idx = st.session_state.min_idx + st.session_state.size

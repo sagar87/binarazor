@@ -1,6 +1,27 @@
+from math import ceil
+
 import streamlit as st
 
+from config import App
 from handler import handle_page_change
+
+
+
+
+def page_selectbox(key, num_items, page_size): 
+    location = st.sidebar.empty()
+    # Display a pagination selectbox in the specified location.
+    num_pages = ceil(num_items / page_size)
+    
+    _ = location.selectbox(
+        "Select page",
+        range(num_pages),
+        format_func=lambda i: f"Page {i+1}",
+        key=key,
+        on_change=handle_page_change,
+        kwargs={"page_size": page_size}
+    )
+
 
 
 def paginator(label, items, items_per_page=10, on_sidebar=True, page_number_key=None):

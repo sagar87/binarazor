@@ -1,6 +1,6 @@
 import streamlit as st
-
 from config import App
+
 
 st.set_page_config(
     page_title=f"{App.PROJECT} | Binarazor", page_icon=f"{App.PAGE_ICON}", layout="wide"
@@ -8,9 +8,9 @@ st.set_page_config(
 
 
 from container import show_sample
-from database import get_all_samples, get_channels, get_reviewers, get_statistics
+from database import get_all_samples, get_total_samples, get_channels, get_statistics, get_reviewers, paginated_samples
 from drive import get_zarr_dict
-from pagination import paginator
+from pagination import paginator, page_selectbox
 
 # Session state
 if "reviewers" not in st.session_state:
@@ -28,8 +28,8 @@ if "primary_channels" not in st.session_state:
 if "primary_channel" not in st.session_state:
     st.session_state.primary_channel = st.session_state.primary_channels[0]
 
-if "samples" not in st.session_state:
-    st.session_state.samples = get_all_samples()
+if "total_samples" not in st.session_state:
+    st.session_state.total_samples = get_total_samples()
 
 if "statistics" not in st.session_state:
     st.session_state.statistics = get_statistics(st.session_state.primary_channel)
@@ -40,11 +40,8 @@ if "size" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = App.DEFAULT_PAGE
 
-if "min_idx" not in st.session_state:
-    st.session_state.min_idx = st.session_state.page * st.session_state.size
-
-if "max_idx" not in st.session_state:
-    st.session_state.max_idx = st.session_state.min_idx + st.session_state.size
+if "samples" not in st.session_state:
+    st.session_state.samples = paginated_samples(st.session_state.page+1, App.DEFAULT_PAGE_SIZE)
 
 if "lower_quantile" not in st.session_state:
     st.session_state.lower_quantile = App.DEFAULT_LOWER_QUANTILE
@@ -90,9 +87,7 @@ with st.container():
     )
     # st.write(st.session_state.samples[st.session_state.min_idx:st.session_state.max_idx])
 
-    for sample in st.session_state.samples[
-        st.session_state.min_idx : st.session_state.max_idx
-    ]:
+    for sample in st.session_state.samples:
         show_sample(sample)
 
 
@@ -136,14 +131,16 @@ with st.sidebar:
         # disabled=st.session_state.primary_channel_fixed,
     )
 
-    paginator(
-        "Select page",
-        st.session_state.samples,
-        items_per_page=st.session_state.size,
-        on_sidebar=True,
-        page_number_key="page",
-    )
-
+    # paginator(
+    #     "Select page",
+    #     st.session_state.samples,
+    #     items_per_page=st.session_state.size,
+    #     on_sidebar=True,
+    #     page_number_key="page",
+    # )
+    
+    page_selectbox("page", st.session_state.total_samples, App.DEFAULT_PAGE_SIZE)
+    
     _ = st.number_input(
         "Threshold",
         key="slider",
