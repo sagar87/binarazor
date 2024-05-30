@@ -3,9 +3,9 @@
 # CHANGE AWS_URL in secrets.yaml
 # CHANGE PROJECT in secrets.yaml
 
-NAMESPACE=ricover-binarazor
-THRESHOLDS="~/Downloads/ricover-threshold.csv"
-EXPRESSION="~/Downloads/ricover_expression.csv"
+NAMESPACE=cart-binarazor
+THRESHOLDS="~/Downloads/cart_thresholds_sprot.csv"
+EXPRESSION="~/Downloads/cart_expression_sprot.csv"
 
 # CHANGE PORT FOR MONGO EXPRESS: mongo_express.yaml
 # CHANGE AWS_URL in secrets.yaml
@@ -18,6 +18,9 @@ kubectl -n ${NAMESPACE} apply -f  kubernetes/pvc.yaml
 kubectl -n ${NAMESPACE} apply -f  kubernetes/mongo-secret.yaml
 kubectl -n ${NAMESPACE} apply -f  kubernetes/mongo.yaml
 kubectl -n ${NAMESPACE} apply -f  kubernetes/mongo-configmap.yaml
+
+read -p "CHANGE MONGOEXPRESS PORT"
+
 kubectl -n ${NAMESPACE} apply -f  kubernetes/mongo-express.yaml
 
 read -p "Wait until services are created.... Press enter to continue"
