@@ -5,7 +5,7 @@ import xarray as xr
 from natsort import natsorted
 from PIL import Image
 
-from config import Bucket
+from config import App, Bucket
 
 fs = s3fs.S3FileSystem(anon=False, client_kwargs={"endpoint_url": Bucket.AWS_URL})
 
@@ -27,10 +27,15 @@ def read_zarr(filename):
 
 
 @st.cache_data
-def read_zarr_sample(filename, sample):
+def read_zarr_sample(filename, sample, downsample=App.DEFAULT_SCALE):
     store = s3fs.S3Map(root=filename, s3=fs, check=False)
     zarr = xr.open_zarr(store=store, consolidated=True)
-    array = zarr._image.sel(channels=sample).values.squeeze()
+    img = zarr.sel(channels=sample)._image
+
+    if downsample != 1:
+        img = img[::downsample, ::downsample]
+
+    array = img.values.squeeze()
     return array
 
 

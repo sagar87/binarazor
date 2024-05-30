@@ -55,6 +55,11 @@ spec:
                 secretKeyRef:
                   name: binarazor-credentials
                   key: AWS_PATH
+            - name: DEFAULT_SCALE
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: DEFAULT_SCALE
             - name: MONGO_ROOT_USER
               valueFrom:
                 secretKeyRef:

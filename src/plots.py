@@ -2,8 +2,11 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from bokeh.plotting import figure
 from bokeh.models import WheelZoomTool
+from bokeh.plotting import figure
+
+from config import App
+
 
 def bokeh_scatter(df, image=None):
     if image is not None:
@@ -21,8 +24,8 @@ def bokeh_scatter(df, image=None):
             image=[image[::-1, :]],
             x=[0],
             y=[0],
-            dw=[image.shape[1]],
-            dh=[image.shape[0]],
+            dw=[App.DEFAULT_SCALE * image.shape[1]],
+            dh=[App.DEFAULT_SCALE * image.shape[0]],
         )
         p.x_range.range_padding = 0
         p.y_range.range_padding = 0

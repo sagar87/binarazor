@@ -46,3 +46,4 @@ services:
       - AWS_URL=${AWS_URL}
       - AWS_PATH=${AWS_PATH}
       - APP_KEY=${APP_KEY}
+      - DEFAULT_SCALE=${DEFAULT_SCALE}
