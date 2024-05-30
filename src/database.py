@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import pymongo
@@ -15,23 +14,23 @@ def init_connection():
         host=Database.HOST,
         port=Database.PORT,
         username=Database.USERNAME,
-        password=Database.PASSWORD
+        password=Database.PASSWORD,
     )
 
 
 client = init_connection()
-db = client['validation']
-channels = db['channels']
-reviewer = db['reviewer']
-expression = db['expression']
-thresholds = db['thresholds']
+db = client["validation"]
+channels = db["channels"]
+reviewer = db["reviewer"]
+expression = db["expression"]
+thresholds = db["thresholds"]
 expression.create_index([("sample", pymongo.ASCENDING)])
 
 
 def get_reviewers():
     query = reviewer.find()
     items = list(query)
-    return [ item["name"] for item in items ]
+    return [item["name"] for item in items]
 
 
 def get_all_channels(sample):
@@ -41,7 +40,7 @@ def get_all_channels(sample):
 def get_channels():
     query = channels.find()
     data = list(query)
-    return [ item['name'] for item in data ]
+    return [item["name"] for item in data]
 
 
 def get_all_samples():
@@ -53,14 +52,23 @@ def get_total_samples():
 
 
 def get_all_bad_samples(channel):
-    query = thresholds.find({"$and": [ {"status": 'bad'}, {"channel": channel} ]}).distinct("sample")
+    query = thresholds.find(
+        {"$and": [{"status": "bad"}, {"channel": channel}]}
+    ).distinct("sample")
     return natsorted(query)
 
 
 def paginated_samples(page, page_size):
     #  { "$project": { "_id": 0, "sample": 1}}
-    query = thresholds.aggregate([ {"$group":{"_id":'$sample'}}, { "$sort": {"sample": 1, "_id": 1}} , {"$skip": (page - 1) * page_size}, {"$limit": page_size} ])    
-    return [ res['_id'] for res in list(query) ]
+    query = thresholds.aggregate(
+        [
+            {"$group": {"_id": "$sample"}},
+            {"$sort": {"sample": 1, "_id": 1}},
+            {"$skip": (page - 1) * page_size},
+            {"$limit": page_size},
+        ]
+    )
+    return [res["_id"] for res in list(query)]
 
 
 # exports.getArticles = async (req, res) => {
@@ -92,19 +100,20 @@ def paginated_samples(page, page_size):
 #   }
 # };
 
+
 def get_samples(channel, filter_samples=True):
     if filter_samples:
-        query = {"$and": [ {"status": float('nan')}, {"channel": channel} ]}        
+        query = {"$and": [{"status": float("nan")}, {"channel": channel}]}
         data = list(thresholds.find(query))
         # print('GETSAMPLE', data)
     else:
         query = {"channel": channel}
         data = list(thresholds.find(query))
-    return natsorted(np.unique([ item['sample'] for item in data ]))
+    return natsorted(np.unique([item["sample"] for item in data]))
 
 
 def get_thresholds_by_channel(channel):
-    query = thresholds.find({'channel': channel})
+    query = thresholds.find({"channel": channel})
     data = list(query)
     return pd.DataFrame(data)
 
@@ -116,28 +125,51 @@ def get_thresholds(sample):
 
 
 def get_threshold(sample, channel):
-    query = thresholds.find_one({"sample": sample, "channel": channel}, {"_id": 0, "threshold": 1})
+    query = thresholds.find_one(
+        {"sample": sample, "channel": channel}, {"_id": 0, "threshold": 1}
+    )
     return query["threshold"]
 
 
 def get_status(sample, channel):
-    query = thresholds.find_one({"sample": sample, "channel": channel}, {"_id": 0, "status": 1, "lower": 1, "upper": 1, "threshold": 1, 'reviewer': 1 })
-    # print('STATUS', query)    
+    query = thresholds.find_one(
+        {"sample": sample, "channel": channel},
+        {"_id": 0, "status": 1, "lower": 1, "upper": 1, "threshold": 1, "reviewer": 1},
+    )
+    # print('STATUS', query)
     return query
 
 
 def get_statistics(channel):
-    results = list(thresholds.aggregate([ {"$match": {"channel": "CD8"} },   {"$group": {"_id" : "$status",  "total": { "$sum": 1 }}}]))
-    
-    completed = thresholds.count_documents({"$and": [ {"$or": [ {"status": 'reviewed'}, {"status": 'bad'}]}, {"channel": channel}]})
-    bad = thresholds.count_documents({"$and": [ {"$or": [ {"status": 'bad'}]}, {"channel": channel}]})
-    reviewed = thresholds.count_documents({"$and": [ {"$or": [ {"status": 'reviewed'}]}, {"channel": channel}]})
+    results = list(
+        thresholds.aggregate(
+            [
+                {"$match": {"channel": "CD8"}},
+                {"$group": {"_id": "$status", "total": {"$sum": 1}}},
+            ]
+        )
+    )
+
+    completed = thresholds.count_documents(
+        {
+            "$and": [
+                {"$or": [{"status": "reviewed"}, {"status": "bad"}]},
+                {"channel": channel},
+            ]
+        }
+    )
+    bad = thresholds.count_documents(
+        {"$and": [{"$or": [{"status": "bad"}]}, {"channel": channel}]}
+    )
+    reviewed = thresholds.count_documents(
+        {"$and": [{"$or": [{"status": "reviewed"}]}, {"channel": channel}]}
+    )
     total = thresholds.count_documents({"channel": channel})
     statistics = {
-        'completed': completed,
-        'bad': bad,
-        'reviewed': reviewed,
-        'total': total
+        "completed": completed,
+        "bad": bad,
+        "reviewed": reviewed,
+        "total": total,
     }
 
     return statistics
@@ -145,15 +177,16 @@ def get_statistics(channel):
 
 def update_status(sample, channel, status, threshold, lower, upper, reviewer, cells):
     query = thresholds.find_one({"sample": sample, "channel": channel}, {"_id": 1})
-    _id = ObjectId(query['_id'])
+    _id = ObjectId(query["_id"])
     updates = {
         "$set": {
-            "threshold": threshold, 
+            "threshold": threshold,
             "status": status,
             "lower": lower,
             "upper": upper,
             "reviewer": reviewer,
-            "cells": cells},
+            "cells": cells,
+        },
     }
     res = thresholds.update_one({"_id": _id}, updates)
     return res
@@ -161,11 +194,15 @@ def update_status(sample, channel, status, threshold, lower, upper, reviewer, ce
 
 @st.cache_data(ttl=600)
 def get_sample_expression(sample, primary_channel, secondary_channel):
-    query = expression.find({"sample": sample}, {"_id": 0, primary_channel: 1, secondary_channel: 1, "X": 1, "Y": 1, "cell": 1})
+    query = expression.find(
+        {"sample": sample},
+        {"_id": 0, primary_channel: 1, secondary_channel: 1, "X": 1, "Y": 1, "cell": 1},
+    )
     data = list(query)
     return pd.DataFrame(data)
 
 
 if __name__ == "__main__":
     import pdb
+
     pdb.set_trace()
