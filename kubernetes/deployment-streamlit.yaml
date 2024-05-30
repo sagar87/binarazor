@@ -75,3 +75,16 @@ spec:
                 configMapKeyRef:
                   name: mongodb-configmap
                   key: database_url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: binarazor-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: binarazor
+  ports:
+    - protocol: TCP
+      port: 8501
+      targetPort: 8501
