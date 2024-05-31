@@ -1,17 +1,42 @@
 import numpy as np
 import streamlit as st
 from streamlit import session_state as state
-from constants import Data, Vars
+
 from config import App
-from database import get_sample_expression, get_status
+from constants import Data, Vars
+from database import get_sample_expression, get_statistics, get_status
 from drive import read_zarr_sample
 from handler import handle_slider, handle_update
 from plots import bokeh_scatter
 from utils import merge_results, normalise_image, regionprops
 
 
+@st.experimental_fragment(run_every="1s")
+def show_channel_status(channel):
+    statistics = get_statistics(channel)
+    with st.container(border=True):
+        st.write(
+            "Completed :tada: :",
+            statistics["completed"],
+            "/",
+            statistics["total"],
+        )
+        st.write(
+            "Reviewed :white_check_mark: :",
+            statistics["reviewed"],
+            "/",
+            statistics["total"],
+        )
+        st.write(
+            "Bad :x: :",
+            statistics["bad"],
+            "/",
+            statistics["total"],
+        )
+
+
 @st.experimental_fragment
-def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg,  positive):
+def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg, positive):
 
     status_dict = get_status(sample, channel)
 
@@ -46,16 +71,12 @@ def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg,  positive):
             )
 
             if np.isnan(status_dict["lower"]):
-                state[lower_key] = np.quantile(
-                    img, state.lower_quantile
-                )
+                state[lower_key] = np.quantile(img, state.lower_quantile)
             else:
                 state[lower_key] = status_dict["lower"]
 
             if np.isnan(status_dict["upper"]):
-                state[upper_key] = np.quantile(
-                    img, state.upper_quantile
-                )
+                state[upper_key] = np.quantile(img, state.upper_quantile)
             else:
                 state[upper_key] = status_dict["upper"]
 
@@ -63,8 +84,7 @@ def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg,  positive):
                 state[slider_key] = state.slider
             else:
                 state[slider_key] = status_dict["threshold"]
-                
-            
+
             with st.container(border=True):
                 sli1, sli2 = st.columns(2)
                 with sli1:
@@ -100,7 +120,6 @@ def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg,  positive):
 
             img_filtered = (img - lower).clip(min=0).astype("int32")
 
-
             col1, col2 = st.columns(2)
             with col1:
                 with st.container(border=True):
@@ -111,9 +130,7 @@ def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg,  positive):
                     )
             # st.write(res)
 
-            data = get_sample_expression(
-                sample, channel, "CD3"
-            )
+            data = get_sample_expression(sample, channel, "CD3")
             res = regionprops(seg, img_filtered, slider)
             df = merge_results(data, res)
 
@@ -126,7 +143,8 @@ def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg,  positive):
                         func=lambda img, val: val,
                     )
                     st.bokeh_chart(
-                        bokeh_scatter(df, img_norm, dotsize_pos, dotsize_neg, positive), use_container_width=True
+                        bokeh_scatter(df, img_norm, dotsize_pos, dotsize_neg, positive),
+                        use_container_width=True,
                     )
 
             with st.container(border=True):
@@ -165,7 +183,6 @@ def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg,  positive):
                         key=f"bad_{sample}_{channel}",
                     )
         else:
-
             st.button(
                 "Reset",
                 on_click=handle_update,

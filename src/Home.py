@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit import session_state as state
+
 from config import App
 
 st.set_page_config(
@@ -10,7 +11,7 @@ st.set_page_config(
 from math import ceil
 
 from constants import Data, Vars
-from container import show_sample
+from container import show_channel_status, show_sample
 from database import (
     get_all_samples,
     get_channels,
@@ -21,14 +22,13 @@ from database import (
 )
 from drive import get_zarr_dict
 
-
 # To preserve global session state
 if Vars._REVIEWER not in state:
     state[Vars._REVIEWER] = Data.REVIEWERS[0]
 
 if Vars._CHANNEL not in state:
     state[Vars._CHANNEL] = Data.CHANNELS[0]
-    
+
 if Vars._DOTSIZE_NEG not in state:
     state[Vars._DOTSIZE_NEG] = App.DEFAULT_DOTSIZE_NEG
 
@@ -47,12 +47,10 @@ state[Vars.POSITIVE] = state[Vars._POSITIVE]
 
 if Vars.PAGE not in state:
     state[Vars.PAGE] = App.DEFAULT_PAGE
-   
-if Vars.SAMPLES not in state: 
-    state[Vars.SAMPLES] = paginated_samples(
-        state[Vars.PAGE] + 1, App.DEFAULT_PAGE_SIZE
-    )
-    
+
+if Vars.SAMPLES not in state:
+    state[Vars.SAMPLES] = paginated_samples(state[Vars.PAGE] + 1, App.DEFAULT_PAGE_SIZE)
+
 if Vars.STATISTICS not in state:
     state[Vars.STATISTICS] = get_statistics(state[Vars.CHANNEL])
 
@@ -65,11 +63,6 @@ if Vars.UPPER_QUANTILE not in state:
 if Vars.SLIDER not in state:
     state[Vars.SLIDER] = App.DEFAULT_SLIDER_VALUE
 
-
-
-
-if "two_columns" not in state:
-    state.two_columns = True
 
 if App.ENV == "development":
     with st.container(border=False):
@@ -89,7 +82,14 @@ with st.container():
     # st.write(state.samples[state.min_idx:state.max_idx])
 
     for sample in state[Vars.SAMPLES]:
-        show_sample(sample, state[Vars.CHANNEL], state[Vars.REVIEWER], state[Vars.DOTSIZE_POS], state[Vars.DOTSIZE_NEG], state[Vars.POSITIVE])
+        show_sample(
+            sample,
+            state[Vars.CHANNEL],
+            state[Vars.REVIEWER],
+            state[Vars.DOTSIZE_POS],
+            state[Vars.DOTSIZE_NEG],
+            state[Vars.POSITIVE],
+        )
 
 
 def _change_callback(page, page_size):
@@ -101,12 +101,10 @@ def _change_callback(page, page_size):
     upper = state[Vars.UPPER_QUANTILE]
     dot_pos = state[Vars.DOTSIZE_POS]
     dot_neg = state[Vars.DOTSIZE_NEG]
-    slider =  state[Vars.SLIDER]
+    slider = state[Vars.SLIDER]
     positive = state[Vars.POSITIVE]
-    
-    
-    st.toast(f"Message {page}, {page_size}, {lower}, {upper}, {channel}")
-    state[Vars._REVIEWER] = reviewer 
+
+    state[Vars._REVIEWER] = reviewer
     state[Vars.REVIEWER] = reviewer
     state[Vars._CHANNEL] = channel
     state[Vars.CHANNEL] = channel
@@ -116,42 +114,25 @@ def _change_callback(page, page_size):
     state[Vars.DOTSIZE_POS] = dot_neg
     state[Vars._POSITIVE] = positive
     state[Vars.POSITIVE] = positive
-    
+
     state[Vars.LOWER_QUANTILE] = lower
     state[Vars.UPPER_QUANTILE] = upper
     state[Vars.SLIDER] = slider
-        
-    
+
     state.page = page
     state.samples = paginated_samples(page + 1, page_size)
-    
+    st.success(
+        f"Changed settings: Reviewer {reviewer} | Channel {channel} | Page {page+1} ...",
+        icon="✅",
+    )
 
 
 with st.sidebar:
-
-    st.write(
-        "Completed :tada: :",
-        state.statistics["completed"],
-        "/",
-        state.statistics["total"],
-    )
-    st.write(
-        "Reviewed :white_check_mark: :",
-        state.statistics["reviewed"],
-        "/",
-        state.statistics["total"],
-    )
-    st.write(
-        "Bad :x: :",
-        state.statistics["bad"],
-        "/",
-        state.statistics["total"],
-    )
-
+    show_channel_status(state[Vars.CHANNEL])
 
     with st.form("settings_form"):
         st.toggle("Positive cells only", key=Vars.POSITIVE)
-        
+
         reviewer = st.selectbox(
             "Select Reviewer:",
             Data.REVIEWERS,
@@ -184,7 +165,7 @@ with st.sidebar:
             "Threshold",
             key=Vars.SLIDER,
             format="%.2f",
-            step=0.01,
+            step=0.05,
             min_value=0.0,
             max_value=1.0,
         )
