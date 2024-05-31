@@ -39,16 +39,35 @@ class Vars:
     REVIEWER = "reviewer"
     _CHANNEL = "_channel"
     CHANNEL = "channel"
-    _PAGE = "_page"
-    PAGE = "page"
     _DOTSIZE_NEG = "_dotsize_neg"
     DOTSIZE_NEG = "dotsize_neg"
     _DOTSIZE_POS = "_dotsize_pos"
     DOTSIZE_POS = "dotsize_pos"
     _POSITIVE = "positive"
     POSITIVE = "positive"
+
+    _PAGE = "_page"
+    PAGE = "page"
+    _SAMPLES = "_samples"
     SAMPLES = "samples"
+
     STATISTICS = "statistics"
+    _LOWER_QUANTILE = "_lower_quantile"
     LOWER_QUANTILE = "lower_quantile"
+    _UPPER_QUANTILE = "upper_quantile"
     UPPER_QUANTILE = "upper_quantile"
+    _SLIDER = "_slider"
     SLIDER = "slider"
+
+    _STATUS = "_status"
+    STATUS = "status"
+
+    _NUM_SAMPLES = "_num_samples"
+    NUM_SAMPLES = "num_samples"
+
+    _NUM_PAGES = "_NUM_PAGES"
+    NUM_PAGES = "NUM_PAGES"
+
+    ALL = "all"
+    BAD = "bad"
+    REVIEWED = "reviewed"
