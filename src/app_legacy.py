@@ -4,6 +4,7 @@ import streamlit as st
 st.set_page_config(page_title="Binarazor", page_icon=":bar_chart:", layout="wide")
 
 import streamlit.components.v1 as components
+from pagination import paginator
 from skimage.measure import regionprops_table
 
 from database import get_reviewers, get_sample_expression, get_status
@@ -24,7 +25,6 @@ from handler import (
     handle_update_threshold,
     increment_value,
 )
-from pagination import paginator
 from plots import (
     bokeh_scatter,
     plot_hist,
