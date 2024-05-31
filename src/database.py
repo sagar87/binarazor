@@ -155,14 +155,14 @@ def get_status(sample, channel):
 
 
 def get_statistics(channel):
-    results = list(
-        thresholds.aggregate(
-            [
-                {"$match": {"channel": "CD8"}},
-                {"$group": {"_id": "$status", "total": {"$sum": 1}}},
-            ]
-        )
-    )
+    # results = list(
+    #     thresholds.aggregate(
+    #         [
+    #             {"$match": {"channel": "CD8"}},
+    #             {"$group": {"_id": "$status", "total": {"$sum": 1}}},
+    #         ]
+    #     )
+    # )
 
     completed = thresholds.count_documents(
         {
