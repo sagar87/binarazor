@@ -78,7 +78,7 @@ def paginated_samples(page, page_size, status=None, channel=None):
                 {"$skip": (page - 1) * page_size},
                 {"$limit": page_size},
             ]
-        )        
+        )
     return [res["_id"] for res in list(query)]
 
 

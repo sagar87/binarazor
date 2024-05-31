@@ -35,7 +35,9 @@ def regionprops(seg, img_filtered, slider):
 def merge_results(data, results):
     # df = subsample_data(data, subsample)
     results = pd.DataFrame(results)
-    return data.merge(results, left_on="cell", right_on="label", how="left").fillna(False)
+    return data.merge(results, left_on="cell", right_on="label", how="left").fillna(
+        False
+    )
 
 
 def is_positive(regionmask: np.ndarray, intensity_image: np.ndarray) -> float:

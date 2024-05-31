@@ -1,4 +1,5 @@
 from enum import Enum
+
 from database import (
     get_all_samples,
     get_channels,
@@ -35,6 +36,3 @@ class Vars:
     LOWER_QUANTILE = "lower_quantile"
     UPPER_QUANTILE = "upper_quantile"
     SLIDER = "slider"
-    
-    
-    
