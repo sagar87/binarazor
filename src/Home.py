@@ -19,11 +19,20 @@ from database import (
 )
 from drive import get_zarr_dict, read_zarr_sample
 
+################
+#              #
+# IMPORT DATA  #
+#              #
+################
 REVIEWERS = get_reviewers()
 CHANNELS = get_channels()
 ZARR_DICT = get_zarr_dict()
 
-# To preserve global session state
+#################
+#               #
+# Session state #
+#               #
+#################
 if Vars._REVIEWER not in state:
     state[Vars._REVIEWER] = REVIEWERS[0]
 
@@ -136,7 +145,7 @@ with st.container():
 
 
 def _change_callback():
-    # unpack values
+    # update the session state
     page = state[Vars.PAGE]
     reviewer = state[Vars.REVIEWER]
     channel = state[Vars.CHANNEL]
@@ -177,13 +186,16 @@ def _change_callback():
         state[Vars._NUM_PAGES] = num_pages
         state[Vars.NUM_PAGES] = num_pages
 
+    state[Vars._STATUS] = status
+    state[Vars.STATUS] = status
     state[Vars._PAGE] = page
     state[Vars.PAGE] = page
 
-    state[Vars._SAMPLES] = paginated_samples(
+    samples = paginated_samples(
         page + 1, App.DEFAULT_PAGE_SIZE, channel=channel, status=status
     )
-    state[Vars.SAMPLES] = state[Vars._SAMPLES]
+    state[Vars._SAMPLES] = samples
+    state[Vars.SAMPLES] = samples
 
     st.success(
         f"Changed settings: Reviewer {reviewer} | Channel {channel} | Page {page+1} | Status {status} ...",
@@ -210,8 +222,6 @@ with st.sidebar:
             CHANNELS,
             key=Vars.CHANNEL,
             placeholder="Select channel ...",
-            # on_change=handle_primary_channel_select,
-            # disabled=state.primary_channel_fixed,
         )
 
         _ = st.selectbox(
@@ -219,8 +229,6 @@ with st.sidebar:
             ["all", "bad"],
             key=Vars.STATUS,
             placeholder="Select status ...",
-            # on_change=handle_primary_channel_select,
-            # disabled=state.primary_channel_fixed,
         )
 
         _ = st.selectbox(
@@ -228,8 +236,6 @@ with st.sidebar:
             range(state[Vars.NUM_PAGES]),
             format_func=lambda i: f"Page {i+1}",
             key="page",
-            # on_change=handle_page_change,
-            # kwargs={"page_size": page_size}
         )
 
         _ = st.number_input(
@@ -251,7 +257,7 @@ with st.sidebar:
                 max_value=1.0,
                 step=0.01,
             )
-            # st.write(state.lower_quantile)
+
         with quantile_col2:
             _ = st.number_input(
                 "Upper quantile",
