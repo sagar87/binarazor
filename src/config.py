@@ -32,3 +32,23 @@ class App:
     DEFAULT_UPPER_QUANTILE = os.getenv("DEFAULT_UPPER_QUANTILE", 0.998)
     DEFAULT_LOWER_QUANTILE = os.getenv("DEFAULT_LOWER_QUANTILE", 0.990)
     DEFAULT_SCALE = int(os.getenv("DEFAULT_SCALE", 8))
+
+
+class Vars:
+    _REVIEWER = "_reviewer"
+    REVIEWER = "reviewer"
+    _CHANNEL = "_channel"
+    CHANNEL = "channel"
+    _PAGE = "_page"
+    PAGE = "page"
+    _DOTSIZE_NEG = "_dotsize_neg"
+    DOTSIZE_NEG = "dotsize_neg"
+    _DOTSIZE_POS = "_dotsize_pos"
+    DOTSIZE_POS = "dotsize_pos"
+    _POSITIVE = "positive"
+    POSITIVE = "positive"
+    SAMPLES = "samples"
+    STATISTICS = "statistics"
+    LOWER_QUANTILE = "lower_quantile"
+    UPPER_QUANTILE = "upper_quantile"
+    SLIDER = "slider"
