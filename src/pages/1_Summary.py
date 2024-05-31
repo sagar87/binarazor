@@ -13,7 +13,7 @@ st.set_page_config(
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import pandas as pd
 
-from database import get_channels, get_samples, get_thresholds_by_channel
+from database import get_channels, get_thresholds_by_channel
 
 
 def get_data():

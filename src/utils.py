@@ -15,20 +15,6 @@ def read_html():
 
 
 @st.cache_data
-def subsample_data(data, subsample):
-    if subsample != 0:
-        df = data.loc[
-            data.sample(
-                min(data.shape[0], int(subsample)),
-                random_state=42,
-            ).index
-        ]
-    else:
-        df = data
-    return df
-
-
-@st.cache_data
 def regionprops(seg, img_filtered, slider):
     def is_positive(x, y, slider_value=slider):
         return is_positive_individual(x, y, slider_value=slider_value)
@@ -46,10 +32,12 @@ def regionprops(seg, img_filtered, slider):
     return res
 
 
-def merge_results(data, subsample, results):
-    df = subsample_data(data, subsample)
+def merge_results(data, results):
+    # df = subsample_data(data, subsample)
     results = pd.DataFrame(results)
-    return df.merge(results, left_on="cell", right_on="label", how="left").fillna(False)
+    return data.merge(results, left_on="cell", right_on="label", how="left").fillna(
+        False
+    )
 
 
 def is_positive(regionmask: np.ndarray, intensity_image: np.ndarray) -> float:
