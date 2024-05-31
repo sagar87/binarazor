@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit import session_state as state
 
-from config import App
+from config import App, Vars
 
 st.set_page_config(
     page_title=f"{App.PROJECT} | Binarazor", page_icon=f"{App.PAGE_ICON}", layout="wide"
@@ -10,58 +10,92 @@ st.set_page_config(
 
 from math import ceil
 
-from constants import Data, Vars
 from container import show_channel_status, show_sample
 from database import (
-    get_all_samples,
     get_channels,
     get_reviewers,
-    get_statistics,
-    get_total_samples,
+    get_sample_status_num,
     paginated_samples,
 )
-from drive import get_zarr_dict
+from drive import get_zarr_dict, read_zarr_sample
+
+REVIEWERS = get_reviewers()
+CHANNELS = get_channels()
+ZARR_DICT = get_zarr_dict()
 
 # To preserve global session state
 if Vars._REVIEWER not in state:
-    state[Vars._REVIEWER] = Data.REVIEWERS[0]
+    state[Vars._REVIEWER] = REVIEWERS[0]
+
+state[Vars.REVIEWER] = state[Vars._REVIEWER]
 
 if Vars._CHANNEL not in state:
-    state[Vars._CHANNEL] = Data.CHANNELS[0]
+    state[Vars._CHANNEL] = CHANNELS[0]
+
+state[Vars.CHANNEL] = state[Vars._CHANNEL]
 
 if Vars._DOTSIZE_NEG not in state:
     state[Vars._DOTSIZE_NEG] = App.DEFAULT_DOTSIZE_NEG
 
+state[Vars.DOTSIZE_NEG] = state[Vars._DOTSIZE_NEG]
+
 if Vars._DOTSIZE_POS not in state:
     state[Vars._DOTSIZE_POS] = App.DEFAULT_DOTSIZE_POS
+
+state[Vars.DOTSIZE_POS] = state[Vars._DOTSIZE_POS]
 
 if Vars._POSITIVE not in state:
     state[Vars._POSITIVE] = True
 
-
-state[Vars.REVIEWER] = state[Vars._REVIEWER]
-state[Vars.CHANNEL] = state[Vars._CHANNEL]
-state[Vars.DOTSIZE_NEG] = state[Vars._DOTSIZE_NEG]
-state[Vars.DOTSIZE_POS] = state[Vars._DOTSIZE_POS]
 state[Vars.POSITIVE] = state[Vars._POSITIVE]
 
-if Vars.PAGE not in state:
-    state[Vars.PAGE] = App.DEFAULT_PAGE
+if Vars._LOWER_QUANTILE not in state:
+    state[Vars._LOWER_QUANTILE] = App.DEFAULT_LOWER_QUANTILE
 
-if Vars.SAMPLES not in state:
-    state[Vars.SAMPLES] = paginated_samples(state[Vars.PAGE] + 1, App.DEFAULT_PAGE_SIZE)
+state[Vars.LOWER_QUANTILE] = state[Vars._LOWER_QUANTILE]
 
-if Vars.STATISTICS not in state:
-    state[Vars.STATISTICS] = get_statistics(state[Vars.CHANNEL])
+if Vars._UPPER_QUANTILE not in state:
+    state[Vars._UPPER_QUANTILE] = App.DEFAULT_UPPER_QUANTILE
 
-if Vars.LOWER_QUANTILE not in state:
-    state[Vars.LOWER_QUANTILE] = App.DEFAULT_LOWER_QUANTILE
+state[Vars.UPPER_QUANTILE] = state[Vars._UPPER_QUANTILE]
 
-if Vars.UPPER_QUANTILE not in state:
-    state[Vars.UPPER_QUANTILE] = App.DEFAULT_UPPER_QUANTILE
+if Vars._SLIDER not in state:
+    state[Vars._SLIDER] = App.DEFAULT_SLIDER_VALUE
 
-if Vars.SLIDER not in state:
-    state[Vars.SLIDER] = App.DEFAULT_SLIDER_VALUE
+state[Vars.SLIDER] = state[Vars._SLIDER]
+
+if Vars._STATUS not in state:
+    state[Vars._STATUS] = Vars.ALL
+
+state[Vars.STATUS] = state[Vars._STATUS]
+
+if Vars._NUM_SAMPLES not in state:
+    state[Vars._NUM_SAMPLES] = get_sample_status_num(
+        channel=state[Vars.CHANNEL], status=state[Vars.STATUS]
+    )
+
+state[Vars.NUM_SAMPLES] = state[Vars._NUM_SAMPLES]
+
+if Vars._PAGE not in state:
+    state[Vars._PAGE] = App.DEFAULT_PAGE
+
+state[Vars.PAGE] = state[Vars._PAGE]
+
+
+if Vars._NUM_PAGES not in state:
+    state[Vars._NUM_PAGES] = ceil(state[Vars.NUM_SAMPLES] / App.DEFAULT_PAGE_SIZE)
+
+state[Vars.NUM_PAGES] = state[Vars._NUM_PAGES]
+
+if Vars._SAMPLES not in state:
+    state[Vars._SAMPLES] = paginated_samples(
+        state[Vars._PAGE] + 1,
+        App.DEFAULT_PAGE_SIZE,
+        channel=state[Vars.CHANNEL],
+        status=state[Vars.STATUS],
+    )
+
+state[Vars.SAMPLES] = state[Vars._SAMPLES]
 
 
 if App.ENV == "development":
@@ -77,22 +111,31 @@ if App.ENV == "development":
 with st.container():
 
     st.header(
-        f"Page number {state[Vars.PAGE]} | Use CMD/STRG + :heavy_plus_sign: / :heavy_minus_sign: to zoom in/out."
+        f"Viewing channel {state[Vars.CHANNEL]} ({state[Vars.STATUS]})| Page {state[Vars.PAGE] + 1} / {state[Vars.NUM_PAGES] + 1} "
+    )
+    st.subheader(
+        "Use CMD/STRG + :heavy_plus_sign: / :heavy_minus_sign: to zoom in/out."
     )
     # st.write(state.samples[state.min_idx:state.max_idx])
 
     for sample in state[Vars.SAMPLES]:
+        seg = read_zarr_sample(ZARR_DICT["segmentation"], sample)
+        img = read_zarr_sample(ZARR_DICT[state[Vars.CHANNEL]], sample)
         show_sample(
+            img,
+            seg,
             sample,
             state[Vars.CHANNEL],
             state[Vars.REVIEWER],
             state[Vars.DOTSIZE_POS],
             state[Vars.DOTSIZE_NEG],
+            state[Vars.LOWER_QUANTILE],
+            state[Vars.UPPER_QUANTILE],
             state[Vars.POSITIVE],
         )
 
 
-def _change_callback(page, page_size):
+def _change_callback():
     # unpack values
     page = state[Vars.PAGE]
     reviewer = state[Vars.REVIEWER]
@@ -103,6 +146,7 @@ def _change_callback(page, page_size):
     dot_neg = state[Vars.DOTSIZE_NEG]
     slider = state[Vars.SLIDER]
     positive = state[Vars.POSITIVE]
+    status = state[Vars.STATUS]
 
     state[Vars._REVIEWER] = reviewer
     state[Vars.REVIEWER] = reviewer
@@ -115,14 +159,34 @@ def _change_callback(page, page_size):
     state[Vars._POSITIVE] = positive
     state[Vars.POSITIVE] = positive
 
+    state[Vars._LOWER_QUANTILE] = lower
     state[Vars.LOWER_QUANTILE] = lower
+    state[Vars._UPPER_QUANTILE] = upper
     state[Vars.UPPER_QUANTILE] = upper
+    state[Vars._SLIDER] = slider
     state[Vars.SLIDER] = slider
+    st.toast(f"{state[Vars._STATUS]} {state[Vars.STATUS]}")
 
-    state.page = page
-    state.samples = paginated_samples(page + 1, page_size)
+    if status != state[Vars._STATUS]:
+        # if the status has changed reset to first page
+        page = 0
+        num_samples = get_sample_status_num(channel, status)
+        num_pages = ceil(num_samples / App.DEFAULT_PAGE_SIZE)
+        state[Vars._NUM_SAMPLES] = num_samples
+        state[Vars.NUM_SAMPLES] = num_samples
+        state[Vars._NUM_PAGES] = num_pages
+        state[Vars.NUM_PAGES] = num_pages
+
+    state[Vars._PAGE] = page
+    state[Vars.PAGE] = page
+
+    state[Vars._SAMPLES] = paginated_samples(
+        page + 1, App.DEFAULT_PAGE_SIZE, channel=channel, status=status
+    )
+    state[Vars.SAMPLES] = state[Vars._SAMPLES]
+
     st.success(
-        f"Changed settings: Reviewer {reviewer} | Channel {channel} | Page {page+1} ...",
+        f"Changed settings: Reviewer {reviewer} | Channel {channel} | Page {page+1} | Status {status} ...",
         icon="✅",
     )
 
@@ -133,28 +197,35 @@ with st.sidebar:
     with st.form("settings_form"):
         st.toggle("Positive cells only", key=Vars.POSITIVE)
 
-        reviewer = st.selectbox(
-            "Select Reviewer:",
-            Data.REVIEWERS,
+        _ = st.selectbox(
+            "Select Reviewer",
+            REVIEWERS,
             index=0,
             key=Vars.REVIEWER,
             placeholder="Select a reviewer ...",
         )
 
-        channel = st.selectbox(
-            "Select Primary channel",
-            Data.CHANNELS,
+        _ = st.selectbox(
+            "Select channel",
+            CHANNELS,
             key=Vars.CHANNEL,
-            placeholder="Select primary channel ...",
+            placeholder="Select channel ...",
             # on_change=handle_primary_channel_select,
             # disabled=state.primary_channel_fixed,
         )
 
-        num_pages = ceil(Data.NUM_SAMPLES / App.DEFAULT_PAGE_SIZE)
+        _ = st.selectbox(
+            "Select status",
+            ["all", "bad"],
+            key=Vars.STATUS,
+            placeholder="Select status ...",
+            # on_change=handle_primary_channel_select,
+            # disabled=state.primary_channel_fixed,
+        )
 
-        page = st.selectbox(
+        _ = st.selectbox(
             "Select page",
-            range(num_pages),
+            range(state[Vars.NUM_PAGES]),
             format_func=lambda i: f"Page {i+1}",
             key="page",
             # on_change=handle_page_change,
@@ -213,5 +284,4 @@ with st.sidebar:
         st.form_submit_button(
             "Apply changes",
             on_click=_change_callback,
-            kwargs={"page": page, "page_size": App.DEFAULT_PAGE_SIZE},
         )

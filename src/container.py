@@ -3,18 +3,17 @@ import streamlit as st
 from streamlit import session_state as state
 
 from config import App
-from constants import Data, Vars
 from database import get_sample_expression, get_statistics, get_status
-from drive import read_zarr_sample
 from handler import handle_slider, handle_update
 from plots import bokeh_scatter
 from utils import merge_results, normalise_image, regionprops
 
 
-@st.experimental_fragment(run_every="1s")
+@st.experimental_fragment(run_every="5s")
 def show_channel_status(channel):
     statistics = get_statistics(channel)
     with st.container(border=True):
+        st.write("Updates every 5 sec ...")
         st.write(
             "Completed :tada: :",
             statistics["completed"],
@@ -36,7 +35,18 @@ def show_channel_status(channel):
 
 
 @st.experimental_fragment
-def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg, positive):
+def show_sample(
+    img,
+    seg,
+    sample,
+    channel,
+    reviewer,
+    dotsize_pos,
+    dotsize_neg,
+    lower_quantile,
+    upper_quantile,
+    positive,
+):
 
     status_dict = get_status(sample, channel)
 
@@ -64,19 +74,13 @@ def show_sample(sample, channel, reviewer, dotsize_pos, dotsize_neg, positive):
         slider_key = f"slider_{sample}_{channel}"
 
         if status == "not reviewed":
-            seg = read_zarr_sample(Data.ZARR_DICT["segmentation"], sample)
-            img = read_zarr_sample(
-                Data.ZARR_DICT[channel],
-                sample,
-            )
-
             if np.isnan(status_dict["lower"]):
-                state[lower_key] = np.quantile(img, state.lower_quantile)
+                state[lower_key] = np.quantile(img, lower_quantile)
             else:
                 state[lower_key] = status_dict["lower"]
 
             if np.isnan(status_dict["upper"]):
-                state[upper_key] = np.quantile(img, state.upper_quantile)
+                state[upper_key] = np.quantile(img, upper_quantile)
             else:
                 state[upper_key] = status_dict["upper"]
 

@@ -51,16 +51,19 @@ def get_total_samples():
     return len(thresholds.distinct("sample"))
 
 
-def get_all_bad_samples(channel):
+def get_sample_status_num(channel, status="all"):
+    if status == "all":
+        return len(thresholds.distinct("sample"))
+
     query = thresholds.find(
-        {"$and": [{"status": "bad"}, {"channel": channel}]}
+        {"$and": [{"status": status}, {"channel": channel}]}
     ).distinct("sample")
-    return natsorted(query)
+    return len(query)
 
 
-def paginated_samples(page, page_size, status=None, channel=None):
+def paginated_samples(page, page_size, channel, status="all"):
     #  { "$project": { "_id": 0, "sample": 1}}
-    if status is None:
+    if status == "all":
         query = thresholds.aggregate(
             [
                 {"$group": {"_id": "$sample"}},
