@@ -1,5 +1,5 @@
 import streamlit as st
-
+from streamlit import session_state as state
 from config import App
 
 st.set_page_config(
@@ -9,6 +9,7 @@ st.set_page_config(
 
 from math import ceil
 
+from constants import Data, Vars
 from container import show_sample
 from database import (
     get_all_samples,
@@ -19,134 +20,156 @@ from database import (
     paginated_samples,
 )
 from drive import get_zarr_dict
-from pagination import page_selectbox, paginator
 
 
-# CONSTANTS
-class Constants:
-    REVIEWERS = get_reviewers()
-    NUM_SAMPLES = get_total_samples()
-    CHANNELS = get_channels()
+# To preserve global session state
+if Vars._REVIEWER not in state:
+    state[Vars._REVIEWER] = Data.REVIEWERS[0]
+
+if Vars._CHANNEL not in state:
+    state[Vars._CHANNEL] = Data.CHANNELS[0]
+    
+if Vars._DOTSIZE_NEG not in state:
+    state[Vars._DOTSIZE_NEG] = App.DEFAULT_DOTSIZE_NEG
+
+if Vars._DOTSIZE_POS not in state:
+    state[Vars._DOTSIZE_POS] = App.DEFAULT_DOTSIZE_POS
+
+if Vars._POSITIVE not in state:
+    state[Vars._POSITIVE] = True
 
 
-# Session state
-if "selected_reviewer" not in st.session_state:
-    st.session_state.selected_reviewer = st.session_state.reviewers[0]
+state[Vars.REVIEWER] = state[Vars._REVIEWER]
+state[Vars.CHANNEL] = state[Vars._CHANNEL]
+state[Vars.DOTSIZE_NEG] = state[Vars._DOTSIZE_NEG]
+state[Vars.DOTSIZE_POS] = state[Vars._DOTSIZE_POS]
+state[Vars.POSITIVE] = state[Vars._POSITIVE]
 
-if "zarr_dict" not in st.session_state:
-    st.session_state.zarr_dict = get_zarr_dict()
-
-if "primary_channel" not in st.session_state:
-    st.session_state.primary_channel = st.session_state.primary_channels[0]
-
-if "statistics" not in st.session_state:
-    st.session_state.statistics = get_statistics(st.session_state.primary_channel)
-
-if "size" not in st.session_state:
-    st.session_state.size = App.DEFAULT_PAGE_SIZE
-
-if "page" not in st.session_state:
-    st.session_state.page = App.DEFAULT_PAGE
-
-if "samples" not in st.session_state:
-    st.session_state.samples = paginated_samples(
-        st.session_state.page + 1, App.DEFAULT_PAGE_SIZE
+if Vars.PAGE not in state:
+    state[Vars.PAGE] = App.DEFAULT_PAGE
+   
+if Vars.SAMPLES not in state: 
+    state[Vars.SAMPLES] = paginated_samples(
+        state[Vars.PAGE] + 1, App.DEFAULT_PAGE_SIZE
     )
+    
+if Vars.STATISTICS not in state:
+    state[Vars.STATISTICS] = get_statistics(state[Vars.CHANNEL])
 
-if "lower_quantile" not in st.session_state:
-    st.session_state.lower_quantile = App.DEFAULT_LOWER_QUANTILE
+if Vars.LOWER_QUANTILE not in state:
+    state[Vars.LOWER_QUANTILE] = App.DEFAULT_LOWER_QUANTILE
 
-if "upper_quantile" not in st.session_state:
-    st.session_state.upper_quantile = App.DEFAULT_UPPER_QUANTILE
+if Vars.UPPER_QUANTILE not in state:
+    state[Vars.UPPER_QUANTILE] = App.DEFAULT_UPPER_QUANTILE
 
-if "slider" not in st.session_state:
-    st.session_state.slider = App.DEFAULT_SLIDER_VALUE
+if Vars.SLIDER not in state:
+    state[Vars.SLIDER] = App.DEFAULT_SLIDER_VALUE
 
-if "stepsize" not in st.session_state:
-    st.session_state.stepsize = App.DEFAULT_SLIDER_STEPSIZE
 
-if "subsample" not in st.session_state:
-    st.session_state.subsample = 0
 
-if "dotsize_neg" not in st.session_state:
-    st.session_state.dotsize_neg = App.DEFAULT_DOTSIZE_NEG
 
-if "dotsize_pos" not in st.session_state:
-    st.session_state.dotsize_pos = App.DEFAULT_DOTSIZE_POS
-
-if "postive_cells" not in st.session_state:
-    st.session_state.postive_cells = False
-
-if "two_columns" not in st.session_state:
-    st.session_state.two_columns = True
+if "two_columns" not in state:
+    state.two_columns = True
 
 if App.ENV == "development":
     with st.container(border=False):
         with st.expander("session_state"):
             tcols = st.columns(4)
 
-            for i, var in enumerate(sorted(st.session_state)):
+            for i, var in enumerate(sorted(state)):
                 with tcols[i % 4]:
-                    st.write(var, st.session_state[var])
+                    st.write(var, state[var])
 
 
 with st.container():
 
     st.header(
-        f"Page number {st.session_state.page} | Use CMD/STRG + :heavy_plus_sign: / :heavy_minus_sign: to zoom in/out."
+        f"Page number {state[Vars.PAGE]} | Use CMD/STRG + :heavy_plus_sign: / :heavy_minus_sign: to zoom in/out."
     )
-    # st.write(st.session_state.samples[st.session_state.min_idx:st.session_state.max_idx])
+    # st.write(state.samples[state.min_idx:state.max_idx])
 
-    for sample in st.session_state.samples:
-        show_sample(sample)
+    for sample in state[Vars.SAMPLES]:
+        show_sample(sample, state[Vars.CHANNEL], state[Vars.REVIEWER], state[Vars.DOTSIZE_POS], state[Vars.DOTSIZE_NEG], state[Vars.POSITIVE])
 
 
-def _change_callback():
-    print("jere")
+def _change_callback(page, page_size):
+    # unpack values
+    page = state[Vars.PAGE]
+    reviewer = state[Vars.REVIEWER]
+    channel = state[Vars.CHANNEL]
+    lower = state[Vars.LOWER_QUANTILE]
+    upper = state[Vars.UPPER_QUANTILE]
+    dot_pos = state[Vars.DOTSIZE_POS]
+    dot_neg = state[Vars.DOTSIZE_NEG]
+    slider =  state[Vars.SLIDER]
+    positive = state[Vars.POSITIVE]
+    
+    
+    st.toast(f"Message {page}, {page_size}, {lower}, {upper}, {channel}")
+    state[Vars._REVIEWER] = reviewer 
+    state[Vars.REVIEWER] = reviewer
+    state[Vars._CHANNEL] = channel
+    state[Vars.CHANNEL] = channel
+    state[Vars._DOTSIZE_NEG] = dot_neg
+    state[Vars.DOTSIZE_NEG] = dot_neg
+    state[Vars._DOTSIZE_POS] = dot_pos
+    state[Vars.DOTSIZE_POS] = dot_neg
+    state[Vars._POSITIVE] = positive
+    state[Vars.POSITIVE] = positive
+    
+    state[Vars.LOWER_QUANTILE] = lower
+    state[Vars.UPPER_QUANTILE] = upper
+    state[Vars.SLIDER] = slider
+        
+    
+    state.page = page
+    state.samples = paginated_samples(page + 1, page_size)
+    
 
 
 with st.sidebar:
 
     st.write(
         "Completed :tada: :",
-        st.session_state.statistics["completed"],
+        state.statistics["completed"],
         "/",
-        st.session_state.statistics["total"],
+        state.statistics["total"],
     )
     st.write(
         "Reviewed :white_check_mark: :",
-        st.session_state.statistics["reviewed"],
+        state.statistics["reviewed"],
         "/",
-        st.session_state.statistics["total"],
+        state.statistics["total"],
     )
     st.write(
         "Bad :x: :",
-        st.session_state.statistics["bad"],
+        state.statistics["bad"],
         "/",
-        st.session_state.statistics["total"],
+        state.statistics["total"],
     )
 
-    st.toggle("Two column layout (beta)", value=False, key="two_columns")
 
     with st.form("settings_form"):
+        st.toggle("Positive cells only", key=Vars.POSITIVE)
+        
         reviewer = st.selectbox(
             "Select Reviewer:",
-            Constants.REVIEWERS,
+            Data.REVIEWERS,
             index=0,
-            key="selected_reviewer",
+            key=Vars.REVIEWER,
             placeholder="Select a reviewer ...",
         )
 
         channel = st.selectbox(
             "Select Primary channel",
-            Constants.CHANNELS,
-            key="primary_channel",
+            Data.CHANNELS,
+            key=Vars.CHANNEL,
             placeholder="Select primary channel ...",
             # on_change=handle_primary_channel_select,
-            # disabled=st.session_state.primary_channel_fixed,
+            # disabled=state.primary_channel_fixed,
         )
 
-        num_pages = ceil(Constants.NUM_SAMPLES / App.DEFAULT_PAGE_SIZE)
+        num_pages = ceil(Data.NUM_SAMPLES / App.DEFAULT_PAGE_SIZE)
 
         page = st.selectbox(
             "Select page",
@@ -159,7 +182,7 @@ with st.sidebar:
 
         _ = st.number_input(
             "Threshold",
-            key="slider",
+            key=Vars.SLIDER,
             format="%.2f",
             step=0.01,
             min_value=0.0,
@@ -170,17 +193,17 @@ with st.sidebar:
         with quantile_col1:
             _ = st.number_input(
                 "Lower quantile",
-                key="lower_quantile",
+                key=Vars.LOWER_QUANTILE,
                 format="%.4f",
                 min_value=0.0,
                 max_value=1.0,
                 step=0.01,
             )
-            # st.write(st.session_state.lower_quantile)
+            # st.write(state.lower_quantile)
         with quantile_col2:
             _ = st.number_input(
                 "Upper quantile",
-                key="upper_quantile",
+                key=Vars.UPPER_QUANTILE,
                 format="%.4f",
                 min_value=0.0,
                 max_value=1.0,
@@ -193,17 +216,21 @@ with st.sidebar:
                 "Dot size (-)",
                 min_value=0,
                 max_value=10,
-                key="dotsize_neg",
+                key=Vars.DOTSIZE_NEG,
                 format="%d",
-                disabled=st.session_state.two_columns,
+                disabled=state[Vars.POSITIVE],
             )
         with dot_col2:
             _ = st.number_input(
                 "Dot size (+)",
                 min_value=0,
                 max_value=10,
-                key="dotsize_pos",
+                key=Vars.DOTSIZE_POS,
                 format="%d",
             )
 
-        st.form_submit_button("Apply_changes", on_click=_change_callback)
+        st.form_submit_button(
+            "Apply changes",
+            on_click=_change_callback,
+            kwargs={"page": page, "page_size": App.DEFAULT_PAGE_SIZE},
+        )
