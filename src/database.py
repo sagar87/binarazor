@@ -58,16 +58,27 @@ def get_all_bad_samples(channel):
     return natsorted(query)
 
 
-def paginated_samples(page, page_size):
+def paginated_samples(page, page_size, status=None, channel=None):
     #  { "$project": { "_id": 0, "sample": 1}}
-    query = thresholds.aggregate(
-        [
-            {"$group": {"_id": "$sample"}},
-            {"$sort": {"sample": 1, "_id": 1}},
-            {"$skip": (page - 1) * page_size},
-            {"$limit": page_size},
-        ]
-    )
+    if status is None:
+        query = thresholds.aggregate(
+            [
+                {"$group": {"_id": "$sample"}},
+                {"$sort": {"sample": 1, "_id": 1}},
+                {"$skip": (page - 1) * page_size},
+                {"$limit": page_size},
+            ]
+        )
+    else:
+        query = thresholds.aggregate(
+            [
+                {"$match": {"status": status, "channel": channel}},
+                {"$group": {"_id": "$sample"}},
+                {"$sort": {"sample": 1, "_id": 1}},
+                {"$skip": (page - 1) * page_size},
+                {"$limit": page_size},
+            ]
+        )        
     return [res["_id"] for res in list(query)]
 
 
