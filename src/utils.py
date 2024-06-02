@@ -7,6 +7,27 @@ import streamlit as st
 from skimage.measure import regionprops_table
 
 
+def _get_icon(status, single_char=False):
+    status = status if isinstance(status, str) else "not reviewed"
+    if single_char:
+        states = {
+            "all": "👜",
+            "not reviewed": "❓",
+            "bad": "❌",
+            "reviewed": "✅",
+            "unsure": "⚠️",
+        }
+    else:
+        states = {
+            "all": ":handbag:",
+            "not reviewed": ":question:",
+            "bad": ":x:",
+            "reviewed": ":white_check_mark:",
+            "unsure": ":warning:",
+        }
+    return states[status]
+
+
 def read_html():
     with open(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
