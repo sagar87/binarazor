@@ -157,6 +157,24 @@ def get_channel_stats(channel):
     return results
 
 
+def get_reviewer_stats():
+    query = list(
+        thresholds.aggregate(
+            [
+                # {"$match": {"channel": channel}},
+                {"$group": {"_id": "$reviewer", "total": {"$sum": 1}}},
+            ]
+        )
+    )
+
+    results = {}
+    for item in query:
+        if isinstance(item["_id"], str):
+            results[item["_id"]] = item["total"]
+
+    return results
+
+
 def get_statistics(channel):
     # results = list(
     #     thresholds.aggregate(
