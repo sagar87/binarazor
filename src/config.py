@@ -52,6 +52,7 @@ class Vars:
     SAMPLES = "samples"
 
     STATISTICS = "statistics"
+
     _LOWER_QUANTILE = "_lower_quantile"
     LOWER_QUANTILE = "lower_quantile"
     _UPPER_QUANTILE = "upper_quantile"
@@ -70,4 +71,6 @@ class Vars:
 
     ALL = "all"
     BAD = "bad"
+    UNSURE = "unsure"
+    NOT_REVIEWED = "not reviewed"
     REVIEWED = "reviewed"
