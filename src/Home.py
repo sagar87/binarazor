@@ -17,22 +17,13 @@ from database import (
     get_sample_status_num,
     paginated_samples,
 )
-from drive import get_zarr_dict, read_zarr_sample
+from handler import handle_form
+from utils import _get_icon
 
-################
-#              #
-# IMPORT DATA  #
-#              #
-################
 REVIEWERS = get_reviewers()
 CHANNELS = get_channels()
-ZARR_DICT = get_zarr_dict()
 
-#################
-#               #
-# Session state #
-#               #
-#################
+
 if Vars._REVIEWER not in state:
     state[Vars._REVIEWER] = REVIEWERS[0]
 
@@ -74,7 +65,7 @@ if Vars._SLIDER not in state:
 state[Vars.SLIDER] = state[Vars._SLIDER]
 
 if Vars._STATUS not in state:
-    state[Vars._STATUS] = Vars.ALL
+    state[Vars._STATUS] = Vars.NOT_REVIEWED
 
 state[Vars.STATUS] = state[Vars._STATUS]
 
@@ -120,7 +111,7 @@ if App.ENV == "development":
 with st.container():
 
     st.header(
-        f"Viewing channel {state[Vars.CHANNEL]} ({state[Vars.STATUS]})| Page {state[Vars.PAGE] + 1} / {state[Vars.NUM_PAGES] + 1} "
+        f"Viewing channel {state[Vars.CHANNEL]} ({state[Vars.STATUS]}) | Page {state[Vars.PAGE] + 1} / {state[Vars.NUM_PAGES] + 1} "
     )
     st.subheader(
         "Use CMD/STRG + :heavy_plus_sign: / :heavy_minus_sign: to zoom in/out."
@@ -128,11 +119,12 @@ with st.container():
     # st.write(state.samples[state.min_idx:state.max_idx])
 
     for sample in state[Vars.SAMPLES]:
-        seg = read_zarr_sample(ZARR_DICT["segmentation"], sample)
-        img = read_zarr_sample(ZARR_DICT[state[Vars.CHANNEL]], sample)
+        show = "not reviewed" if state[Vars.STATUS] == "all" else state[Vars.STATUS]
+
+        # st.write(f'{state[lower_key]}, {state[upper_key]}')
+        # status_dict = get_status(sample, state[Vars.CHANNEL])
+        # st.write(status_dict)
         show_sample(
-            img,
-            seg,
             sample,
             state[Vars.CHANNEL],
             state[Vars.REVIEWER],
@@ -140,75 +132,33 @@ with st.container():
             state[Vars.DOTSIZE_NEG],
             state[Vars.LOWER_QUANTILE],
             state[Vars.UPPER_QUANTILE],
+            state[Vars.SLIDER],
             state[Vars.POSITIVE],
+            show=show,
         )
-
-
-def _change_callback():
-    # update the session state
-    page = state[Vars.PAGE]
-    reviewer = state[Vars.REVIEWER]
-    channel = state[Vars.CHANNEL]
-    lower = state[Vars.LOWER_QUANTILE]
-    upper = state[Vars.UPPER_QUANTILE]
-    dot_pos = state[Vars.DOTSIZE_POS]
-    dot_neg = state[Vars.DOTSIZE_NEG]
-    slider = state[Vars.SLIDER]
-    positive = state[Vars.POSITIVE]
-    status = state[Vars.STATUS]
-
-    state[Vars._REVIEWER] = reviewer
-    state[Vars.REVIEWER] = reviewer
-    state[Vars._CHANNEL] = channel
-    state[Vars.CHANNEL] = channel
-    state[Vars._DOTSIZE_NEG] = dot_neg
-    state[Vars.DOTSIZE_NEG] = dot_neg
-    state[Vars._DOTSIZE_POS] = dot_pos
-    state[Vars.DOTSIZE_POS] = dot_neg
-    state[Vars._POSITIVE] = positive
-    state[Vars.POSITIVE] = positive
-
-    state[Vars._LOWER_QUANTILE] = lower
-    state[Vars.LOWER_QUANTILE] = lower
-    state[Vars._UPPER_QUANTILE] = upper
-    state[Vars.UPPER_QUANTILE] = upper
-    state[Vars._SLIDER] = slider
-    state[Vars.SLIDER] = slider
-    st.toast(f"{state[Vars._STATUS]} {state[Vars.STATUS]}")
-
-    if status != state[Vars._STATUS]:
-        # if the status has changed reset to first page
-        page = 0
-        num_samples = get_sample_status_num(channel, status)
-        num_pages = ceil(num_samples / App.DEFAULT_PAGE_SIZE)
-        state[Vars._NUM_SAMPLES] = num_samples
-        state[Vars.NUM_SAMPLES] = num_samples
-        state[Vars._NUM_PAGES] = num_pages
-        state[Vars.NUM_PAGES] = num_pages
-
-    state[Vars._STATUS] = status
-    state[Vars.STATUS] = status
-    state[Vars._PAGE] = page
-    state[Vars.PAGE] = page
-
-    samples = paginated_samples(
-        page + 1, App.DEFAULT_PAGE_SIZE, channel=channel, status=status
-    )
-    state[Vars._SAMPLES] = samples
-    state[Vars.SAMPLES] = samples
-
-    st.success(
-        f"Changed settings: Reviewer {reviewer} | Channel {channel} | Page {page+1} | Status {status} ...",
-        icon="✅",
-    )
 
 
 with st.sidebar:
     show_channel_status(state[Vars.CHANNEL])
 
     with st.form("settings_form"):
+        st.subheader("Global settings")
         st.toggle("Positive cells only", key=Vars.POSITIVE)
 
+        _ = st.radio(
+            "Select status",
+            [
+                "not reviewed",
+                "reviewed",
+                "unsure",
+                "bad",
+                "all",
+            ],
+            key=Vars.STATUS,
+            format_func=lambda x: f"{_get_icon(x)}",  # {x.capitalize()}
+            horizontal=True
+            # placeholder="Select status ...",
+        )
         _ = st.selectbox(
             "Select Reviewer",
             REVIEWERS,
@@ -222,13 +172,6 @@ with st.sidebar:
             CHANNELS,
             key=Vars.CHANNEL,
             placeholder="Select channel ...",
-        )
-
-        _ = st.selectbox(
-            "Select status",
-            ["all", "bad"],
-            key=Vars.STATUS,
-            placeholder="Select status ...",
         )
 
         _ = st.selectbox(
@@ -289,5 +232,5 @@ with st.sidebar:
 
         st.form_submit_button(
             "Apply changes",
-            on_click=_change_callback,
+            on_click=handle_form,
         )

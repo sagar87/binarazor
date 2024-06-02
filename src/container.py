@@ -1,93 +1,105 @@
 import numpy as np
 import streamlit as st
-from streamlit import session_state as state
 
 from config import App
-from database import get_sample_expression, get_statistics, get_status
-from handler import handle_slider, handle_update
+from database import get_channel_stats, get_entry, get_sample_expression
+from drive import get_zarr_dict, read_zarr_sample
+from handler import handle_update
 from plots import bokeh_scatter
-from utils import merge_results, normalise_image, regionprops
+from utils import _get_icon, merge_results, normalise_image, regionprops
+
+ZARR_DICT = get_zarr_dict()
 
 
 @st.experimental_fragment(run_every="5s")
 def show_channel_status(channel):
-    statistics = get_statistics(channel)
+    statistics = get_channel_stats(channel)
     with st.container(border=True):
-        st.write("Updates every 5 sec ...")
-        st.write(
-            "Completed :tada: :",
-            statistics["completed"],
-            "/",
-            statistics["total"],
-        )
-        st.write(
-            "Reviewed :white_check_mark: :",
-            statistics["reviewed"],
-            "/",
-            statistics["total"],
-        )
-        st.write(
-            "Bad :x: :",
-            statistics["bad"],
-            "/",
-            statistics["total"],
-        )
+        st.subheader(f"{channel} summary")
+        for state in ["not reviewed", "reviewed", "unsure", "bad"]:
+            st.write(
+                f"{state.capitalize()} {_get_icon(state)}:",
+                statistics.get(state, 0),
+                "/",
+                sum(list(statistics.values())),
+            )
+
+
+def _get_status(sample, channel):
+    status = get_entry(sample, channel, "status")
+    return status if isinstance(status, str) else "not reviewed"
+
+
+def get_slider_values(img, sample, channel, global_lower, global_upper, global_slider):
+    # lower_key = f"low_{sample}_{channel}"
+    # upper_key = f"high_{sample}_{channel}"
+    # slider_key = f"slider_{sample}_{channel}"
+
+    lower_value = get_entry(sample, channel, "lower")
+    upper_value = get_entry(sample, channel, "upper")
+    slider_value = get_entry(sample, channel, "threshold")
+
+    lower_value = (
+        np.quantile(img, global_lower) if np.isnan(lower_value) else lower_value
+    )
+    upper_value = (
+        np.quantile(img, global_upper) if np.isnan(upper_value) else upper_value
+    )
+    slider_value = global_slider if np.isnan(slider_value) else slider_value
+    return lower_value, upper_value, slider_value
 
 
 @st.experimental_fragment
 def show_sample(
-    img,
-    seg,
     sample,
     channel,
     reviewer,
     dotsize_pos,
     dotsize_neg,
-    lower_quantile,
-    upper_quantile,
+    global_lower,
+    global_upper,
+    global_slider,
     positive,
+    show="not reviewed",
 ):
-
-    status_dict = get_status(sample, channel)
-
-    status = (
-        status_dict["status"]
-        if isinstance(status_dict["status"], str)
-        else "not reviewed"
-    )
-
-    if status == "not reviewed":
-        icon = ":question:"
-    elif status == "bad":
-        icon = ":x:"
-    else:
-        icon = ":white_check_mark:"
-
+    status = _get_status(sample, channel)
+    icon = _get_icon(status)
     header_string = f"{icon} | {sample}"
 
     if status != "not reviewed":
-        header_string += f' | reviewed by {status_dict["reviewer"]}'
+        header_string += f" | reviewed by {reviewer}"
 
-    with st.expander(header_string, True if status == "not reviewed" else False):
-        lower_key = f"low_{sample}_{channel}"
-        upper_key = f"high_{sample}_{channel}"
-        slider_key = f"slider_{sample}_{channel}"
+    expand = True if (status == show) or (status == "not reviewed") else False
 
-        if status == "not reviewed":
-            if np.isnan(status_dict["lower"]):
-                state[lower_key] = np.quantile(img, lower_quantile)
-            else:
-                state[lower_key] = status_dict["lower"]
+    if not expand:
+        with st.expander(header_string, expand):
+            with st.container():
+                st.button(
+                    ":face_with_monocle: Reset",
+                    on_click=handle_update,
+                    kwargs={
+                        "sample": sample,
+                        "channel": channel,
+                        "reviewer": float("nan"),
+                        "threshold": float("nan"),
+                        "lower": float("nan"),
+                        "upper": float("nan"),
+                        "cells": float("nan"),
+                        "status": float("nan"),
+                    },
+                    key=f"reset_{sample}_{channel}",
+                    disabled=True if (status in ["not reviewed"]) else False,
+                )
 
-            if np.isnan(status_dict["upper"]):
-                state[upper_key] = np.quantile(img, upper_quantile)
-            else:
-                state[upper_key] = status_dict["upper"]
+    else:
+        with st.expander(header_string, expand):
+            seg = read_zarr_sample(ZARR_DICT["segmentation"], sample)
+            img = read_zarr_sample(ZARR_DICT[channel], sample)
 
-            if np.isnan(status_dict["threshold"]):
-                state[slider_key] = state.slider
-            else:
-                state[slider_key] = status_dict["threshold"]
+            lower_value, upper_value, slider_value = get_slider_values(
+                img, sample, channel, global_lower, global_upper, global_slider
+            )
+            # slider
 
             with st.container(border=True):
                 sli1, sli2 = st.columns(2)
@@ -97,18 +109,11 @@ def show_sample(
                         min_value=0.0,
                         max_value=255.0,
                         value=(
-                            state[lower_key],
-                            state[upper_key],
+                            lower_value,
+                            upper_value,
                         ),
                         step=1.0,
                         key=f"intensity_{sample}_{channel}",
-                        on_change=handle_slider,
-                        kwargs={
-                            "kl": lower_key,
-                            "kh": upper_key,
-                            "new_l": state[lower_key],
-                            "new_h": state[upper_key],
-                        },
                         disabled=False if status == "not reviewed" else True,
                     )
                 with sli2:
@@ -116,46 +121,51 @@ def show_sample(
                         "Select Threshold",
                         min_value=0.0,
                         max_value=1.0,
-                        value=state[slider_key],
+                        value=slider_value,
                         step=App.DEFAULT_SLIDER_STEPSIZE,
                         key=f"threshold_{sample}_{channel}",
                         disabled=False if status == "not reviewed" else True,
                     )
 
-            img_filtered = (img - lower).clip(min=0).astype("int32")
+            # images
+            with st.container():
 
-            col1, col2 = st.columns(2)
-            with col1:
-                with st.container(border=True):
-                    img_norm = normalise_image(img)
-                    st.image(
-                        img_norm,
-                        use_column_width=True,
-                    )
-            # st.write(res)
+                img_filtered = (img - lower).clip(min=0).astype("int32")
 
-            data = get_sample_expression(sample, channel, "CD3")
-            res = regionprops(seg, img_filtered, slider)
-            df = merge_results(data, res)
+                col1, col2 = st.columns(2)
+                with col1:
+                    with st.container(border=True):
+                        img_norm = normalise_image(img)
+                        st.image(
+                            img_norm,
+                            use_column_width=True,
+                        )
+                # prepare bokeh plot
+                data = get_sample_expression(sample, channel, "CD3")
+                res = regionprops(seg, img_filtered, slider)
+                df = merge_results(data, res)
 
-            with col2:
-                with st.container(border=True):
-                    img_norm = normalise_image(
-                        img_filtered,
-                        lower=lower,
-                        upper=upper,
-                        func=lambda img, val: val,
-                    )
-                    st.bokeh_chart(
-                        bokeh_scatter(df, img_norm, dotsize_pos, dotsize_neg, positive),
-                        use_container_width=True,
-                    )
+                with col2:
+                    with st.container(border=True):
+                        img_norm = normalise_image(
+                            img_filtered,
+                            lower=lower,
+                            upper=upper,
+                            func=lambda img, val: val,
+                        )
+                        st.bokeh_chart(
+                            bokeh_scatter(
+                                df, img_norm, dotsize_pos, dotsize_neg, positive
+                            ),
+                            use_container_width=True,
+                        )
 
+            # buttons
             with st.container(border=True):
-                but1, but2 = st.columns(2)
+                but1, but2, but3, but4 = st.columns(4)
                 with but1:
                     st.button(
-                        "Save thresholds",
+                        ":white_check_mark: Good",
                         on_click=handle_update,
                         kwargs={
                             "sample": sample,
@@ -168,11 +178,33 @@ def show_sample(
                             "status": "reviewed",
                         },
                         key=f"update_{sample}_{channel}",
+                        disabled=True
+                        if (status in ["reviewed", "unsure", "bad"])
+                        else False,
                     )
 
                 with but2:
                     st.button(
-                        "Mark as bad",
+                        ":warning: Unsure",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": channel,
+                            "reviewer": reviewer,
+                            "threshold": float("nan"),
+                            "lower": float("nan"),
+                            "upper": float("nan"),
+                            "cells": float("nan"),
+                            "status": "unsure",
+                        },
+                        key=f"unsure_{sample}_{channel}",
+                        disabled=True
+                        if (status in ["reviewed", "unsure", "bad"])
+                        else False,
+                    )
+                with but3:
+                    st.button(
+                        ":x: Bad",
                         on_click=handle_update,
                         kwargs={
                             "sample": sample,
@@ -185,20 +217,24 @@ def show_sample(
                             "status": "bad",
                         },
                         key=f"bad_{sample}_{channel}",
+                        disabled=True
+                        if (status in ["reviewed", "unsure", "bad"])
+                        else False,
                     )
-        else:
-            st.button(
-                "Reset",
-                on_click=handle_update,
-                kwargs={
-                    "sample": sample,
-                    "channel": channel,
-                    "reviewer": float("nan"),
-                    "threshold": status_dict["threshold"],
-                    "lower": status_dict["lower"],
-                    "upper": status_dict["upper"],
-                    "cells": float("nan"),
-                    "status": float("nan"),
-                },
-                key=f"reset_{sample}_{channel}",
-            )
+                with but4:
+                    st.button(
+                        ":face_with_monocle: Reset",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": channel,
+                            "reviewer": float("nan"),
+                            "threshold": float("nan"),
+                            "lower": float("nan"),
+                            "upper": float("nan"),
+                            "cells": float("nan"),
+                            "status": float("nan"),
+                        },
+                        key=f"reset_{sample}_{channel}",
+                        disabled=True if (status in ["not reviewed"]) else False,
+                    )

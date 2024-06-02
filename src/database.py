@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pandas as pd
 import pymongo
@@ -27,20 +29,15 @@ thresholds = db["thresholds"]
 expression.create_index([("sample", pymongo.ASCENDING)])
 
 
-def get_reviewers():
+def get_reviewers() -> List[str]:
+    """Returns the list of reviewers"""
     query = reviewer.find()
-    items = list(query)
-    return [item["name"] for item in items]
+    return [item["name"] for item in list(query)]
 
 
-def get_all_channels(sample):
-    return natsorted(thresholds.distinct("channel"))
-
-
-def get_channels():
+def get_channels() -> List[str]:
     query = channels.find()
-    data = list(query)
-    return [item["name"] for item in data]
+    return [item["name"] for item in list(query)]
 
 
 def get_all_samples():
@@ -55,6 +52,7 @@ def get_sample_status_num(channel, status="all"):
     if status == "all":
         return len(thresholds.distinct("sample"))
 
+    status = float("nan") if status == "not reviewed" else status
     query = thresholds.find(
         {"$and": [{"status": status}, {"channel": channel}]}
     ).distinct("sample")
@@ -73,6 +71,7 @@ def paginated_samples(page, page_size, channel, status="all"):
             ]
         )
     else:
+        status = float("nan") if status == "not reviewed" else status
         query = thresholds.aggregate(
             [
                 {"$match": {"status": status, "channel": channel}},
@@ -83,36 +82,6 @@ def paginated_samples(page, page_size, channel, status="all"):
             ]
         )
     return [res["_id"] for res in list(query)]
-
-
-# exports.getArticles = async (req, res) => {
-#   let { page, pageSize } = req.query;
-
-#   try {
-#     // If "page" and "pageSize" are not sent we will default them to 1 and 50.
-#     page = parseInt(page, 10) || 1;
-#     pageSize = parseInt(pageSize, 10) || 50;
-
-#     const articles = await Articles.aggregate([
-#       {
-#         $facet: {
-#           metadata: [{ $count: 'totalCount' }],
-#           data: [{ $skip: (page - 1) * pageSize }, { $limit: pageSize }],
-#         },
-#       },
-#     ]);
-
-#     return res.status(200).json({
-#       success: true,
-#       articles: {
-#         metadata: { totalCount: articles[0].metadata[0].totalCount, page, pageSize },
-#         data: articles[0].data,
-#       },
-#     });
-#   } catch (error) {
-#     return res.status(500).json({ success: false });
-#   }
-# };
 
 
 def get_samples(channel, filter_samples=True):
@@ -145,6 +114,20 @@ def get_threshold(sample, channel):
     return query["threshold"]
 
 
+def get_lower(sample, channel):
+    query = thresholds.find_one(
+        {"sample": sample, "channel": channel}, {"_id": 0, "lower": 1}
+    )
+    return query["lower"]
+
+
+def get_entry(sample, channel, variable):
+    query = thresholds.find_one(
+        {"sample": sample, "channel": channel}, {"_id": 0, variable: 1}
+    )
+    return query[variable]
+
+
 def get_status(sample, channel):
     query = thresholds.find_one(
         {"sample": sample, "channel": channel},
@@ -152,6 +135,26 @@ def get_status(sample, channel):
     )
     # print('STATUS', query)
     return query
+
+
+def get_channel_stats(channel):
+    query = list(
+        thresholds.aggregate(
+            [
+                {"$match": {"channel": channel}},
+                {"$group": {"_id": "$status", "total": {"$sum": 1}}},
+            ]
+        )
+    )
+
+    results = {}
+    for item in query:
+        if isinstance(item["_id"], str):
+            results[item["_id"]] = item["total"]
+        else:
+            results["not reviewed"] = item["total"]
+
+    return results
 
 
 def get_statistics(channel):
