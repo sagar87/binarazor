@@ -2,7 +2,13 @@ import numpy as np
 import streamlit as st
 
 from config import App
-from database import get_channel_stats, get_entry, get_sample_expression
+from database import (
+    get_channel_stats,
+    get_entry,
+    get_reviewer_stats,
+    get_sample_expression,
+    get_channels
+)
 from drive import get_zarr_dict, read_zarr_sample
 from handler import handle_update
 from plots import bokeh_scatter
@@ -23,6 +29,30 @@ def show_channel_status(channel):
                 "/",
                 sum(list(statistics.values())),
             )
+
+
+@st.experimental_fragment(run_every="5s")
+def show_full_channel_status():
+    channels = get_channels()
+    
+    with st.container(border=True):
+        st.subheader(f"Channel summary")
+        # string = ""
+        for ch in channels:
+            statistics = get_channel_stats(ch)
+            string = f"{ch: <6}:"
+            for state in ["reviewed", "unsure", "bad", "not reviewed"]:
+                string += f" {_get_icon(state)} : {statistics.get(state, 0)} |"
+            # string += "\n"
+            st.write(string.rstrip('|'))
+                
+
+def show_reviewer_stats(run_every="5s"):
+    statistics = get_reviewer_stats()
+    with st.container(border=True):
+        st.subheader("Reviewer stats")
+        for k, v in statistics.items():
+            st.write(f"{k}: ", v)
 
 
 def _get_status(sample, channel):
