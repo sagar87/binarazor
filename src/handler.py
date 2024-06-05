@@ -44,6 +44,13 @@ def handle_form():
         channel, float("nan") if status == "not reviewed" else status
     )
     num_pages = ceil(num_samples / App.DEFAULT_PAGE_SIZE)
+
+    if num_pages is None:
+        num_pages = 0
+
+    if page is None:
+        page = 0
+
     state[Vars._NUM_SAMPLES] = num_samples
     state[Vars.NUM_SAMPLES] = num_samples
     state[Vars._NUM_PAGES] = num_pages
