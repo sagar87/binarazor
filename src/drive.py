@@ -44,10 +44,11 @@ def read_zarr_full_sample(filename):
     # img = zarr.sel(channels=sample)._image
 
     # if downsample != 1:
-        # img = img[::downsample, ::downsample]
+    # img = img[::downsample, ::downsample]
 
     # array = img.values.squeeze()
     return zarr
+
 
 @st.cache_data
 def get_samples():
