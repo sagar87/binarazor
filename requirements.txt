@@ -88,7 +88,7 @@ rich==13.7.0
 rpds-py==0.18.0
 rsa==4.9
 s3fs==2024.2.0
-scikit-image==0.22.0
+scikit-image<0.20.0
 scipy==1.12.0
 six==1.16.0
 smmap==5.0.1
@@ -113,8 +113,9 @@ watchdog==4.0.0
 wcwidth==0.2.13
 widgetsnbextension==4.0.10
 wrapt==1.16.0
-xarray==2024.2.0
+xarray<2023.0.0
 yarl==1.9.4
 zarr==2.17.1
 zipp==3.17.0
 bokeh==2.4.3
+spatialproteomics==0.5.0
