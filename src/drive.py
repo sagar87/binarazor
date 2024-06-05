@@ -11,11 +11,9 @@ fs = s3fs.S3FileSystem(anon=False, client_kwargs={"endpoint_url": Bucket.AWS_URL
 
 
 @st.cache_data
-def get_zarr_dict():
+def get_zarr_dict(path=Bucket.AWS_PATH):
     file_dict = {
-        f.split("/")[-1].split(".")[0]: f
-        for f in fs.ls(Bucket.AWS_PATH)
-        if f.endswith(".zarr")
+        f.split("/")[-1].split(".")[0]: f for f in fs.ls(path) if f.endswith(".zarr")
     }
     return file_dict
 
@@ -38,6 +36,18 @@ def read_zarr_sample(filename, sample, downsample=App.DEFAULT_SCALE):
     array = img.values.squeeze()
     return array
 
+
+@st.cache_data
+def read_zarr_full_sample(filename):
+    store = s3fs.S3Map(root=filename, s3=fs, check=False)
+    zarr = xr.open_zarr(store=store, consolidated=True)
+    # img = zarr.sel(channels=sample)._image
+
+    # if downsample != 1:
+        # img = img[::downsample, ::downsample]
+
+    # array = img.values.squeeze()
+    return zarr
 
 @st.cache_data
 def get_samples():
