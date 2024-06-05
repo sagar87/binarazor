@@ -13,7 +13,7 @@ st.set_page_config(
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import pandas as pd
 
-from container import show_reviewer_stats, show_full_channel_status
+from container import show_full_channel_status, show_reviewer_stats
 from database import get_channels, get_thresholds_by_channel
 from utils import _get_icon
 
@@ -57,9 +57,9 @@ def get_cell_list(df):
 
 
 df = get_data()
-overview = get_overview(df)
-thresholds = get_threholds(df)
-cell_lists = get_cell_list(df)
+overview = get_overview(df.copy())
+thresholds = get_threholds(df.copy())
+cell_lists = get_cell_list(df.copy())
 
 st.header("Summary")
 with st.expander("All Samples: Status | Reviewer | # Cells", expanded=True):
