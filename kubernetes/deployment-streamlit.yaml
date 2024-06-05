@@ -16,17 +16,17 @@ spec:
     spec:
       containers:
         - name: binarazor
-          image: sagar87/binarazor:marc
+          image: sagar87/binarazor:leopard
           imagePullPolicy: Always
           ports:
             - containerPort: 8501
           resources:
             requests:
               cpu: "1000m"
-              memory: "16Gi"
+              memory: "8Gi"
             limits:
               cpu: "2000m"
-              memory: "32Gi"
+              memory: "16Gi"
           env:
             - name: ENV
               value: "production"
