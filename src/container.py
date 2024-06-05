@@ -4,10 +4,10 @@ import streamlit as st
 from config import App
 from database import (
     get_channel_stats,
+    get_channels,
     get_entry,
     get_reviewer_stats,
     get_sample_expression,
-    get_channels
 )
 from drive import get_zarr_dict, read_zarr_sample
 from handler import handle_update
@@ -34,9 +34,9 @@ def show_channel_status(channel):
 @st.experimental_fragment(run_every="5s")
 def show_full_channel_status():
     channels = get_channels()
-    
+
     with st.container(border=True):
-        st.subheader(f"Channel summary")
+        st.subheader("Channel summary")
         # string = ""
         for ch in channels:
             statistics = get_channel_stats(ch)
@@ -44,8 +44,8 @@ def show_full_channel_status():
             for state in ["reviewed", "unsure", "bad", "not reviewed"]:
                 string += f" {_get_icon(state)} : {statistics.get(state, 0)} |"
             # string += "\n"
-            st.write(string.rstrip('|'))
-                
+            st.write(string.rstrip("|"))
+
 
 def show_reviewer_stats(run_every="5s"):
     statistics = get_reviewer_stats()
@@ -97,7 +97,7 @@ def show_sample(
     header_string = f"{icon} | {sample}"
 
     if status != "not reviewed":
-        header_string += f" | reviewed by {reviewer}"
+        header_string += f" | reviewed by {reviewer if status == 'not reviewed' else get_entry(sample, channel, 'reviewer')}"
 
     expand = True if (status == show) or (status == "not reviewed") else False
 
