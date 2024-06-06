@@ -95,15 +95,18 @@ def decrement_value():
     )
 
 
-def handle_update(sample, channel, reviewer, threshold, lower, upper, cells, status):
+def handle_update(
+    sample, channel, reviewer, threshold, lower, upper, cells, status, toast=True
+):
     update_status(sample, channel, status, threshold, lower, upper, reviewer, cells)
 
-    st.toast(
-        f"{reviewer} annotated {sample} as {status}!"
-        if isinstance(status, str)
-        else f"Reseted {sample}!",
-        icon=f"{_get_icon(status, single_char=True)}",
-    )
+    if toast:
+        st.toast(
+            f"{reviewer} annotated {sample} as {status}!"
+            if isinstance(status, str)
+            else f"Reseted {sample}!",
+            icon=f"{_get_icon(status, single_char=True)}",
+        )
 
 
 def handle_page_change(page_size):
