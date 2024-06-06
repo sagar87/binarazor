@@ -45,5 +45,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_URL=${AWS_URL}
       - AWS_PATH=${AWS_PATH}
+      - MULTI_PATH=${MULTI_PATH}
       - APP_KEY=${APP_KEY}
       - DEFAULT_SCALE=${DEFAULT_SCALE}

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: binarazor
-          image: sagar87/binarazor:leopard
+          image: sagar87/binarazor:ricover
           imagePullPolicy: Always
           ports:
             - containerPort: 8501
@@ -55,6 +55,11 @@ spec:
                 secretKeyRef:
                   name: binarazor-credentials
                   key: AWS_PATH
+            - name: MULTI_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: binarazor-credentials
+                  key: MULTI_PATH
             - name: DEFAULT_SCALE
               valueFrom:
                 secretKeyRef:
