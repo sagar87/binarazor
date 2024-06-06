@@ -26,7 +26,7 @@ class App:
     PAGE_ICON = os.getenv("PAGE_ICON", "👋")
     DEFAULT_DOTSIZE_NEG = os.getenv("DEFAULT_DOTSIZE_NEG", 2)
     DEFAULT_DOTSIZE_POS = os.getenv("DEFAULT_DOTSIZE_POS", 5)
-    DEFAULT_PAGE_SIZE = int(os.getenv("DEFAULT_PAGE_SIZE", 30))
+    DEFAULT_PAGE_SIZE = int(os.getenv("DEFAULT_PAGE_SIZE", 15))
     DEFAULT_PAGE = int(os.getenv("DEFAULT_PAGE", 0))
     DEFAULT_SLIDER_VALUE = os.getenv("DEFAULT_SLIDER_VALUE", 0.5)
     DEFAULT_SLIDER_STEPSIZE = os.getenv("DEFAULT_SLIDER_STEPSIZE", 0.05)
