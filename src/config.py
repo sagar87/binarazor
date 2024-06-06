@@ -16,6 +16,7 @@ class Bucket:
     AWS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_KEY_SECRET = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_URL = os.getenv("AWS_URL")
+    MULTI_PATH = os.getenv("MULTI_PATH", "")
     AWS_PATH = os.getenv("AWS_PATH")
 
 
@@ -51,6 +52,9 @@ class Vars:
     _SAMPLES = "_samples"
     SAMPLES = "samples"
 
+    _SAMPLE = "_sample"
+    SAMPLE = "sample"
+
     STATISTICS = "statistics"
 
     _LOWER_QUANTILE = "_lower_quantile"
@@ -59,6 +63,15 @@ class Vars:
     UPPER_QUANTILE = "upper_quantile"
     _SLIDER = "_slider"
     SLIDER = "slider"
+
+    _DOWNSAMPLE = "_downsample"
+    DOWNSAMPLE = "downsample"
+    _HEIGHT = "_height"
+    HEIGHT = "height"
+    _RADIUS = "_radius"
+    RADIUS = "radius"
+    _LINEWIDTH = "_linewidth"
+    LINEWIDTH = "linewidth"
 
     _STATUS = "_status"
     STATUS = "status"
