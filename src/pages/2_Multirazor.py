@@ -1,141 +1,124 @@
 import streamlit as st
 
 st.set_page_config(page_title="MultiRazor", page_icon=":bar_chart:", layout="wide")
-from glob import glob
+
 from math import isnan
 
 import cv2
-import numpy as np
 import spatialproteomics as sp
-import xarray as xr
 from bokeh.models import WheelZoomTool
 from bokeh.plotting import figure
 from streamlit import session_state as state
 
+from config import Bucket, Vars
 from container import _get_status
-from database import get_entry
+from database import get_entry, get_reviewers
 from drive import get_zarr_dict, read_zarr_full_sample
 from handler import handle_update
-
-two_col = True
-COLORS = {
-    "PAX5": sp.Red,
-    "CD3": sp.Green,
-    "CD11b": sp.Yellow,
-    "CD11c": sp.Blue,
-    "CD68": sp.Orange,
-    "CD31": sp.Purple,
-    "CD34": sp.Pink,
-    "CD56": sp.Teal,
-    "CD90": sp.Cyan,
-    "Podoplanin": sp.Apricot,
-    "CD15": sp.Olive,
-}
-MARKER = [
-    "PAX5",
-    "CD3",
-    "CD11b",
-    "CD31",
-    "CD34",
-    "CD68",
-    "CD56",
-    "CD90",
-    "CD11c",
-    "Podoplanin",
-    "CD15",
-]
-SAMPLES = get_zarr_dict("voehring/ricover-multirazor")
-# _MARKER = [ f#'_{marker}' for marker in MARKER ]
-DOWNSAMPLE = [1, 2, 4, 8]
-
-if "marker" not in state:
-    state.marker = [
-        "PAX5",
-        "CD3",
-        "CD11b",
-        "CD11c",
-        "CD68",
-        "CD56",
-        "CD31",
-        "CD34",
-        "CD90",
-        "Podoplanin",
-        "CD15",
-    ]
-
-# st.write(SAMPLES)
-if "sample" not in state:
-    state.sample = list(SAMPLES.keys())[0]
-
-if "linewidth" not in state:
-    state.linewidth = 2
-
-if "radius" not in state:
-    state.radius = 5
-
-if "downsample" not in state:
-    state.downsample = 2
-
-if "height" not in state:
-    state.height = 800
-# st.write(state)
-#         state[f'{marker}_slider'] = state[f'{_marker}_slider']
+from utils import _get_icon
 
 
-def handle_multirazor(sample, slider_values, classified, status):
+def handle_multirazor(sample, reviewer, slider_values, classified, status):
 
     for k, v in slider_values.items():
-        if k not in classified.la:
-            cells = []
+        if isinstance(status, str):
+            if k not in classified.la:
+                cells = []
+            else:
+                cells = classified.la[k].cells.values.tolist()
         else:
-            cells = classified.la[k].cells.values.tolist()
+            cells = float("nan")
+
         handle_update(
             sample,
             channel=k,
-            reviewer="Harald",
+            reviewer=reviewer,
             threshold=v,
             lower=float("nan"),
             upper=float("nan"),
             cells=cells,
             status=status,
+            toast=False,
         )
 
-
-def handle_slider(key):
-    print("lalal", state[key], state[f"_{key}"])
-    state[f"_{key}"] = state[key]
-    state[key] = state[key]
-    # state[f"_{key}"] = state[f'_{key}']
-    print("lalal", state[key], state[f"_{key}"])
-
-
-with st.sidebar:
-    sample = st.selectbox(
-        "Select samples", list(SAMPLES.keys()), key="selected_samples"
+    st.toast(
+        f"{reviewer} annotated {sample} as {status}!"
+        if isinstance(status, str)
+        else f"Reseted {sample}!",
+        icon=f"{_get_icon(status, single_char=True)}",
     )
-    downsample = st.radio("Downsample", DOWNSAMPLE, key="downsample", horizontal=True)
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        linewidth = st.number_input(
-            "Linewidth", min_value=0, max_value=5, key="linewidth"
-        )
-    with c2:
-        radius = st.number_input("Radius", min_value=0, max_value=10, key="radius")
 
-    with c3:
-        height = st.number_input("Height", min_value=0, max_value=1600, key="height")
 
-# with st.container():
-# st.multiselect("Select channels", MARKER, key="marker")
+def handle_form():
+    """Handles session state after form input"""
+    reviewer = state[Vars.REVIEWER]
+    sample = state[Vars.SAMPLE]
+    channel = state[Vars.CHANNEL]
+    downsample = state[Vars.DOWNSAMPLE]
+    height = state[Vars.HEIGHT]
+    linewidth = state[Vars.LINEWIDTH]
+    radius = state[Vars.RADIUS]
 
-data = read_zarr_full_sample(SAMPLES[sample])
+    # dot_neg = state[Vars.DOTSIZE_NEG]
+    # slider = state[Vars.SLIDER]
+    # positive = state[Vars.POSITIVE]
+    # status = state[Vars.STATUS]
 
-if len(state.marker) == 0:
-    st.write("Select marker")
+    state[Vars._REVIEWER] = reviewer
+    state[Vars.REVIEWER] = reviewer
+    state[Vars._SAMPLE] = sample
+    state[Vars.SAMPLE] = sample
+    state[Vars._CHANNEL] = channel
+    state[Vars.CHANNEL] = channel
+    state[Vars._DOWNSAMPLE] = downsample
+    state[Vars.DOWNSAMPLE] = downsample
+    state[Vars._HEIGHT] = height
+    state[Vars.HEIGHT] = height
+    state[Vars._LINEWIDTH] = linewidth
+    state[Vars.LINEWIDTH] = linewidth
+    state[Vars._RADIUS] = radius
+    state[Vars.RADIUS] = radius
 
+
+if Bucket.MULTI_PATH == "":
+    st.header("MultiRazor not activated")
 else:
-    status = get_entry
-    slider_values = {}
+    DOWNSAMPLE = [1, 2, 4, 8]
+    REVIEWERS = get_reviewers()
+    ZARR_DICT = get_zarr_dict(Bucket.MULTI_PATH)
+
+    COLORS = {
+        "PAX5": sp.Red,
+        "CD3": sp.Green,
+        "CD11b": sp.Yellow,
+        "CD11c": sp.Blue,
+        "CD68": sp.Orange,
+        "CD31": sp.Purple,
+        "CD34": sp.Pink,
+        "CD56": sp.Teal,
+        "CD90": sp.Cyan,
+        "Podoplanin": sp.Apricot,
+        "CD15": sp.Olive,
+        "CD4": sp.Yellow,
+        "CD8": sp.Red,
+    }
+
+    CHANNELS = [
+        "PAX5",
+        "CD3",
+        "CD11b",
+        "CD11c",
+        "CD31",
+        "CD34",
+        "CD68",
+        "CD56",
+        "CD90",
+        "Podoplanin",
+        "CD15",
+        # "CD4",
+        # "CD8",
+    ]
+
     DEFAULTS = {
         "PAX5": 0.8,
         "CD3": 0.7,
@@ -145,164 +128,276 @@ else:
         "CD68": 0.9,
         "CD90": 0.95,
         "Podoplanin": 0.95,
+        "CD15": 0.99,
     }
 
-    with st.container(border=True):
-        slider_cols = st.columns(2)
+    if Vars._CHANNEL not in state:
+        state[Vars._CHANNEL] = [
+            "PAX5",
+            "CD3",
+            "CD11b",
+            "CD11c",
+            "CD68",
+            "CD56",
+            "CD31",
+            "CD34",
+            "CD90",
+            "Podoplanin",
+        ]
 
-        for i, marker in enumerate(state.marker):
-            marker_threshold = get_entry(sample, marker, "threshold")
-            marker_status = _get_status(sample, marker)
-            # st.write(marker_status)
+    state[Vars.CHANNEL] = state[Vars._CHANNEL]
 
-            col_idx = i % 2
-            with slider_cols[col_idx]:
+    # st.write(ZARR_DICT)
+    if Vars._REVIEWER not in state:
+        state[Vars._REVIEWER] = REVIEWERS[0]
 
-                val = st.slider(
-                    f"{marker}",
-                    value=DEFAULTS.get(marker, 0.9)
-                    if isnan(marker_threshold)
-                    else marker_threshold,
-                    min_value=0.6,
-                    max_value=1.0,
-                    step=0.01,
-                    disabled=True if marker_status == "reviewed" else False,
-                )  # key=f'{marker}_slider', on_change=handle_slider, args=(f'{marker}_slider',)
-                # state[f'{marker}_slider'] = val
-                slider_values[marker] = val
-    # st.write(state)
-    filtered = [slider_values[marker] for marker in state.marker]
+    state[Vars.REVIEWER] = state[Vars._REVIEWER]
 
-    # st.write(state.marker, filtered)
+    if Vars._SAMPLE not in state:
+        state[Vars._SAMPLE] = list(ZARR_DICT.keys())[0]
 
-    filtered_data = data.pp[state.marker].pp.filter(filtered)
+    state[Vars.SAMPLE] = state[Vars._SAMPLE]
 
-with st.status("Filtering data"):
-    img = (
-        filtered_data.pp.downsample(downsample)
-        .pl.colorize([COLORS[marker] for marker in state.marker])
-        ._plot.values
-    )
-    img = cv2.normalize(img, None, 255, 0, cv2.NORM_MINMAX, cv2.CV_8U)
-    img = img.view("uint32").reshape(img.shape[:2])
-with st.status("Computing predictions"):
-    classified = (
-        filtered_data.pp.add_quantification(func=sp.arcsinh_median_intensity)
-        .la.predict_cell_types_argmax(dict(zip(state.marker, state.marker)))
-        .la.set_label_colors(list(COLORS.keys()), list(COLORS.values()))
-    )
+    if Vars._LINEWIDTH not in state:
+        state[Vars._LINEWIDTH] = 2
 
+    state[Vars.LINEWIDTH] = state[Vars._LINEWIDTH]
 
-col1, col2 = st.columns(2)
-with col1:
+    if Vars._RADIUS not in state:
+        state[Vars._RADIUS] = 5
 
-    with st.container(border=True):
-        p = figure(match_aspect=True, sizing_mode="stretch_both")
+    state[Vars.RADIUS] = state[Vars._RADIUS]
 
-        p.image_rgba(
-            image=[img],
-            x=[0],
-            y=[0],
-            dw=[downsample * img.shape[1]],
-            dh=[downsample * img.shape[0]],
-        )
-        p.x_range.range_padding = 0
-        p.y_range.range_padding = 0
-        p.toolbar.active_scroll = p.select_one(WheelZoomTool)
-        p.plot_height = height
-        st.bokeh_chart(p, use_container_width=True)
+    if Vars._DOWNSAMPLE not in state:
+        state[Vars._DOWNSAMPLE] = 2
 
-with col2:
+    state[Vars.DOWNSAMPLE] = state[Vars._DOWNSAMPLE]
 
-    with st.container(border=True):
+    if Vars._HEIGHT not in state:
+        state[Vars._HEIGHT] = 800
 
-        # import pdb;pdb.set_trace()
-        p = figure(match_aspect=True, sizing_mode="stretch_both")
-        p.image_rgba(
-            image=[img],
-            x=[0],
-            y=[0],
-            dw=[downsample * img.shape[1]],
-            dh=[downsample * img.shape[0]],
-        )
-        p.x_range.range_padding = 0
-        p.y_range.range_padding = 0
-        p.toolbar.active_scroll = p.select_one(WheelZoomTool)
-        for cell_id in classified.labels:
-            sub = classified.la[cell_id.item()]
-            x = sub._obs.sel(features="centroid-1").values
-            y = sub._obs.sel(features="centroid-0").values
-            c = sub._properties.sel(props="_color").item()
-            n = sub._properties.sel(props="_name").item()
+    state[Vars.HEIGHT] = state[Vars._HEIGHT]
 
-            p.circle(
-                x,
-                y,
-                radius=radius,
-                fill_color=c,
-                legend_label=n,
-                fill_alpha=0.0,
-                line_width=linewidth,
-                line_color=c,
+    with st.sidebar:
+        with st.form("settings"):
+            _ = st.selectbox("Select reviewer", REVIEWERS, key=Vars.REVIEWER)
+            _ = st.selectbox("Select sample", list(ZARR_DICT.keys()), key=Vars.SAMPLE)
+            _ = st.multiselect("Select channels", CHANNELS, key=Vars.CHANNEL)
+            downsample = st.radio(
+                "Downsample", DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True
+            )
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                linewidth = st.number_input(
+                    "Linewidth", min_value=0, max_value=5, key=Vars.LINEWIDTH
+                )
+            with c2:
+                radius = st.number_input(
+                    "Radius", min_value=0, max_value=10, key=Vars.RADIUS
+                )
+
+            with c3:
+                height = st.number_input(
+                    "Height", min_value=0, max_value=1600, key=Vars.HEIGHT
+                )
+
+            st.form_submit_button(
+                "Apply changes",
+                on_click=handle_form,
             )
 
-            # print(cell_id.item())
-        p.plot_height = height
-        st.bokeh_chart(p, use_container_width=True)
+    data = read_zarr_full_sample(ZARR_DICT[state[Vars.SAMPLE]])
 
-dol1, dol2 = st.columns(2)
-with dol1:
+    if len(state[Vars.CHANNEL]) == 0:
+        st.write("Select marker")
+
+    else:
+        status = get_entry
+        slider_values = {}
+
+        with st.container(border=True):
+            slider_cols = st.columns(len(state[Vars.CHANNEL]))
+
+            for i, marker in enumerate(state[Vars.CHANNEL]):
+                marker_threshold = get_entry(state[Vars.SAMPLE], marker, "threshold")
+                marker_status = _get_status(state[Vars.SAMPLE], marker)
+                # st.write(marker_status)
+
+                # col_idx = i % 2
+                with slider_cols[i]:
+
+                    val = st.slider(
+                        f"{marker}",
+                        value=DEFAULTS.get(marker, 0.9)
+                        if isnan(marker_threshold)
+                        else marker_threshold,
+                        min_value=0.6,
+                        max_value=1.0,
+                        step=0.01,
+                        disabled=True if marker_status == "reviewed" else False,
+                    )  # key=f'{marker}_slider', on_change=handle_slider, args=(f'{marker}_slider',)
+                    # state[f'{marker}_slider'] = val
+                    slider_values[marker] = val
+        # st.write(state)
+        filtered = [slider_values[marker] for marker in state[Vars.CHANNEL]]
+
+        filtered_data = data.pp[state[Vars.CHANNEL]].pp.filter(filtered)
+
+    with st.status("Filtering data"):
+        img = (
+            filtered_data.pp.downsample(downsample)
+            .pl.colorize([COLORS[marker] for marker in state[Vars.CHANNEL]])
+            ._plot.values
+        )
+        img = cv2.normalize(img, None, 255, 0, cv2.NORM_MINMAX, cv2.CV_8U)
+        img = img.view("uint32").reshape(img.shape[:2])
+    with st.status("Computing predictions"):
+        classified = (
+            filtered_data.pp.add_quantification(func=sp.arcsinh_median_intensity)
+            .la.predict_cell_types_argmax(
+                dict(zip(state[Vars.CHANNEL], state[Vars.CHANNEL]))
+            )
+            .la.set_label_colors(list(COLORS.keys()), list(COLORS.values()))
+        )
 
     with st.container(border=True):
-        total = []
-        names = []
-        colors = []
-        for cell_id in classified.labels:
-            sub = classified.la[cell_id.item()]
-            # x = sub._obs.sel(features="centroid-1").values
-            # y = sub._obs.sel(features="centroid-0").values
-            t = len(sub.cells.values.tolist())
-            c = sub._properties.sel(props="_color").item()
-            n = sub._properties.sel(props="_name").item()
-            total.append(t)
-            names.append(n)
-            colors.append(c)
+        bc1, bc2 = st.columns(2)
+        with bc1:
+            st.button(
+                ":white_check_mark: Good",
+                on_click=handle_multirazor,
+                kwargs={
+                    "sample": state[Vars.SAMPLE],
+                    "reviewer": state[Vars.REVIEWER],
+                    "slider_values": slider_values,
+                    "classified": classified,
+                    "status": "reviewed",
+                },
+                disabled=True if marker_status == "reviewed" else False,
+            )
+        with bc2:
+            st.button(
+                ":face_with_monocle: Reset",
+                on_click=handle_multirazor,
+                kwargs={
+                    "sample": state[Vars.SAMPLE],
+                    "reviewer": float("nan"),
+                    "slider_values": {k: float("nan") for k in slider_values.keys()},
+                    "classified": classified,
+                    "status": float("nan"),
+                },
+                # key=f"reset_{sample}_{channel}",
+                disabled=True if (status in ["not reviewed"]) else False,
+            )
 
-        p = figure(x_range=names, title="Cell counts", toolbar_location=None, tools="")
-        p.vbar(x=names, top=total, color=colors, width=0.9)
-        p.xgrid.grid_line_color = None
-        p.y_range.start = 0
-        st.bokeh_chart(p)
+    col1, col2 = st.columns(2)
+    with col1:
 
-with dol2:
-    pass
+        with st.container(border=True):
+            p = figure(match_aspect=True, sizing_mode="stretch_both")
 
-with st.container():
-    bc1, bc2 = st.columns(2)
-    with bc1:
-        st.button(
-            ":white_check_mark: Good",
-            on_click=handle_multirazor,
-            kwargs={
-                "sample": sample,
-                "slider_values": slider_values,
-                "classified": classified,
-                "status": "reviewed",
-            },
-            disabled=True if marker_status == "reviewed" else False,
-        )
-    with bc2:
-        st.button(
-            ":face_with_monocle: Reset",
-            on_click=handle_multirazor,
-            kwargs={
-                "sample": sample,
-                "slider_values": {k: float("nan") for k in slider_values.keys()},
-                "classified": classified,
-                "status": float("nan"),
-            },
-            # key=f"reset_{sample}_{channel}",
-            disabled=True if (status in ["not reviewed"]) else False,
-        )
-    # for k, v in slider_values.items():
-    #     st.write(k)
+            p.image_rgba(
+                image=[img],
+                x=[0],
+                y=[0],
+                dw=[downsample * img.shape[1]],
+                dh=[downsample * img.shape[0]],
+            )
+            p.x_range.range_padding = 0
+            p.y_range.range_padding = 0
+            p.toolbar.active_scroll = p.select_one(WheelZoomTool)
+            p.plot_height = height
+            st.bokeh_chart(p, use_container_width=True)
+
+    with col2:
+
+        with st.container(border=True):
+
+            # import pdb;pdb.set_trace()
+            p = figure(match_aspect=True, sizing_mode="stretch_both")
+            p.image_rgba(
+                image=[img],
+                x=[0],
+                y=[0],
+                dw=[downsample * img.shape[1]],
+                dh=[downsample * img.shape[0]],
+            )
+            p.x_range.range_padding = 0
+            p.y_range.range_padding = 0
+            p.toolbar.active_scroll = p.select_one(WheelZoomTool)
+            for cell_id in classified.labels:
+                sub = classified.la[cell_id.item()]
+                x = sub._obs.sel(features="centroid-1").values
+                y = sub._obs.sel(features="centroid-0").values
+                c = sub._properties.sel(props="_color").item()
+                n = sub._properties.sel(props="_name").item()
+
+                p.circle(
+                    x,
+                    y,
+                    radius=radius,
+                    fill_color=c,
+                    legend_label=n,
+                    fill_alpha=0.0,
+                    line_width=linewidth,
+                    line_color=c,
+                )
+
+                # print(cell_id.item())
+            p.plot_height = height
+            st.bokeh_chart(p, use_container_width=True)
+
+    dol1, dol2 = st.columns(2)
+    with dol1:
+
+        with st.container(border=True):
+            total = []
+            names = []
+            colors = []
+            for cell_id in classified.labels:
+                sub = classified.la[cell_id.item()]
+                # x = sub._obs.sel(features="centroid-1").values
+                # y = sub._obs.sel(features="centroid-0").values
+                t = len(sub.cells.values.tolist())
+                c = sub._properties.sel(props="_color").item()
+                n = sub._properties.sel(props="_name").item()
+                total.append(t)
+                names.append(n)
+                colors.append(c)
+
+            p = figure(
+                x_range=names, title="Cell counts", toolbar_location=None, tools=""
+            )
+            p.vbar(x=names, top=total, color=colors, width=0.9)
+            p.xgrid.grid_line_color = None
+            p.y_range.start = 0
+            st.bokeh_chart(p, use_container_width=True)
+
+    with dol2:
+        with st.container(border=True):
+            p = figure(match_aspect=True, sizing_mode="stretch_both")
+            p.toolbar.active_scroll = p.select_one(WheelZoomTool)
+            for cell_id in classified.labels:
+                sub = classified.la[cell_id.item()]
+                x = sub._obs.sel(features="centroid-1").values
+                y = sub._obs.sel(features="centroid-0").values
+                c = sub._properties.sel(props="_color").item()
+                n = sub._properties.sel(props="_name").item()
+
+                p.circle(
+                    x,
+                    y,
+                    radius=radius,
+                    fill_color=c,
+                    legend_label=n,
+                    fill_alpha=1.0,
+                    line_width=linewidth,
+                    line_color=c,
+                )
+
+                # print(cell_id.item())
+            # p.plot_height = height
+            st.bokeh_chart(p, use_container_width=True)
+
+        # for k, v in slider_values.items():
+        #     st.write(k)
