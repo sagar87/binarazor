@@ -4,7 +4,7 @@ from bokeh.plotting import figure
 from config import App
 
 
-def bokeh_scatter(df, image, dotsize_pos, dotsize_neg, positive):
+def bokeh_scatter(df, image, height, dotsize_pos, dotsize_neg, positive):
     p = figure(match_aspect=True, sizing_mode="stretch_both")
 
     p.image(
@@ -35,6 +35,6 @@ def bokeh_scatter(df, image, dotsize_pos, dotsize_neg, positive):
             fill_alpha=0.1,
             line_color=None,
         )
-
+    p.plot_height = height
     p.axis.visible = False
     return p

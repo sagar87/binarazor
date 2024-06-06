@@ -90,6 +90,7 @@ def show_sample(
     global_upper,
     global_slider,
     positive,
+    height,
     show="not reviewed",
 ):
     status = _get_status(sample, channel)
@@ -185,7 +186,7 @@ def show_sample(
                         )
                         st.bokeh_chart(
                             bokeh_scatter(
-                                df, img_norm, dotsize_pos, dotsize_neg, positive
+                                df, img_norm, height, dotsize_pos, dotsize_neg, positive
                             ),
                             use_container_width=True,
                         )
