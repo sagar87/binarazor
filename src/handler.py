@@ -20,6 +20,7 @@ def handle_form():
     slider = state[Vars.SLIDER]
     positive = state[Vars.POSITIVE]
     status = state[Vars.STATUS]
+    downsample = state[Vars.DOWNSAMPLE]
 
     state[Vars._REVIEWER] = reviewer
     state[Vars.REVIEWER] = reviewer
@@ -38,6 +39,8 @@ def handle_form():
     state[Vars.UPPER_QUANTILE] = upper
     state[Vars._SLIDER] = slider
     state[Vars.SLIDER] = slider
+    state[Vars._DOWNSAMPLE] = downsample
+    state[Vars.DOWNSAMPLE] = downsample
     # st.toast(f"{state[Vars._STATUS]} {state[Vars.STATUS]}")
 
     num_samples = get_sample_status_num(

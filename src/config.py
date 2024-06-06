@@ -33,6 +33,7 @@ class App:
     DEFAULT_UPPER_QUANTILE = os.getenv("DEFAULT_UPPER_QUANTILE", 0.998)
     DEFAULT_LOWER_QUANTILE = os.getenv("DEFAULT_LOWER_QUANTILE", 0.990)
     DEFAULT_SCALE = int(os.getenv("DEFAULT_SCALE", 8))
+    DOWNSAMPLE = [1, 2, 4, 8]
 
 
 class Vars:
@@ -64,6 +65,8 @@ class Vars:
     _SLIDER = "_slider"
     SLIDER = "slider"
 
+    _CHANNELS = "_channels"
+    CHANNELS = "channels"
     _DOWNSAMPLE = "_downsample"
     DOWNSAMPLE = "downsample"
     _HEIGHT = "_height"

@@ -97,6 +97,11 @@ if Vars._SAMPLES not in state:
 
 state[Vars.SAMPLES] = state[Vars._SAMPLES]
 
+if Vars._DOWNSAMPLE not in state:
+    state[Vars._DOWNSAMPLE] = 2
+
+state[Vars.DOWNSAMPLE] = state[Vars._DOWNSAMPLE]
+
 
 if App.ENV == "development":
     with st.container(border=False):
@@ -159,6 +164,10 @@ with st.sidebar:
             horizontal=True
             # placeholder="Select status ...",
         )
+        # downsample = st.radio(
+        #         "Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True
+        #     )
+
         _ = st.selectbox(
             "Select Reviewer",
             REVIEWERS,

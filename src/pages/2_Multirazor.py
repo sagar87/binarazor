@@ -10,7 +10,7 @@ from bokeh.models import WheelZoomTool
 from bokeh.plotting import figure
 from streamlit import session_state as state
 
-from config import Bucket, Vars
+from config import App, Bucket, Vars
 from container import _get_status
 from database import get_entry, get_reviewers
 from drive import get_zarr_dict, read_zarr_full_sample
@@ -53,7 +53,7 @@ def handle_form():
     """Handles session state after form input"""
     reviewer = state[Vars.REVIEWER]
     sample = state[Vars.SAMPLE]
-    channel = state[Vars.CHANNEL]
+    channel = state[Vars.CHANNELS]
     downsample = state[Vars.DOWNSAMPLE]
     height = state[Vars.HEIGHT]
     linewidth = state[Vars.LINEWIDTH]
@@ -68,8 +68,8 @@ def handle_form():
     state[Vars.REVIEWER] = reviewer
     state[Vars._SAMPLE] = sample
     state[Vars.SAMPLE] = sample
-    state[Vars._CHANNEL] = channel
-    state[Vars.CHANNEL] = channel
+    state[Vars._CHANNELS] = channel
+    state[Vars.CHANNELS] = channel
     state[Vars._DOWNSAMPLE] = downsample
     state[Vars.DOWNSAMPLE] = downsample
     state[Vars._HEIGHT] = height
@@ -131,8 +131,8 @@ else:
         "CD15": 0.99,
     }
 
-    if Vars._CHANNEL not in state:
-        state[Vars._CHANNEL] = [
+    if Vars._CHANNELS not in state:
+        state[Vars._CHANNELS] = [
             "PAX5",
             "CD3",
             "CD11b",
@@ -145,7 +145,7 @@ else:
             "Podoplanin",
         ]
 
-    state[Vars.CHANNEL] = state[Vars._CHANNEL]
+    state[Vars.CHANNELS] = state[Vars._CHANNELS]
 
     # st.write(ZARR_DICT)
     if Vars._REVIEWER not in state:
@@ -182,22 +182,22 @@ else:
         with st.form("settings"):
             _ = st.selectbox("Select reviewer", REVIEWERS, key=Vars.REVIEWER)
             _ = st.selectbox("Select sample", list(ZARR_DICT.keys()), key=Vars.SAMPLE)
-            _ = st.multiselect("Select channels", CHANNELS, key=Vars.CHANNEL)
-            downsample = st.radio(
-                "Downsample", DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True
+            _ = st.multiselect("Select channels", CHANNELS, key=Vars.CHANNELS)
+            _ = st.radio(
+                "Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True
             )
             c1, c2, c3 = st.columns(3)
             with c1:
-                linewidth = st.number_input(
+                _ = st.number_input(
                     "Linewidth", min_value=0, max_value=5, key=Vars.LINEWIDTH
                 )
             with c2:
-                radius = st.number_input(
+                _ = st.number_input(
                     "Radius", min_value=0, max_value=10, key=Vars.RADIUS
                 )
 
             with c3:
-                height = st.number_input(
+                _ = st.number_input(
                     "Height", min_value=0, max_value=1600, key=Vars.HEIGHT
                 )
 
@@ -208,7 +208,7 @@ else:
 
     data = read_zarr_full_sample(ZARR_DICT[state[Vars.SAMPLE]])
 
-    if len(state[Vars.CHANNEL]) == 0:
+    if len(state[Vars.CHANNELS]) == 0:
         st.write("Select marker")
 
     else:
@@ -216,9 +216,9 @@ else:
         slider_values = {}
 
         with st.container(border=True):
-            slider_cols = st.columns(len(state[Vars.CHANNEL]))
+            slider_cols = st.columns(len(state[Vars.CHANNELS]))
 
-            for i, marker in enumerate(state[Vars.CHANNEL]):
+            for i, marker in enumerate(state[Vars.CHANNELS]):
                 marker_threshold = get_entry(state[Vars.SAMPLE], marker, "threshold")
                 marker_status = _get_status(state[Vars.SAMPLE], marker)
                 # st.write(marker_status)
@@ -239,14 +239,14 @@ else:
                     # state[f'{marker}_slider'] = val
                     slider_values[marker] = val
         # st.write(state)
-        filtered = [slider_values[marker] for marker in state[Vars.CHANNEL]]
+        filtered = [slider_values[marker] for marker in state[Vars.CHANNELS]]
 
-        filtered_data = data.pp[state[Vars.CHANNEL]].pp.filter(filtered)
+        filtered_data = data.pp[state[Vars.CHANNELS]].pp.filter(filtered)
 
     with st.status("Filtering data"):
         img = (
-            filtered_data.pp.downsample(downsample)
-            .pl.colorize([COLORS[marker] for marker in state[Vars.CHANNEL]])
+            filtered_data.pp.downsample(state[Vars.DOWNSAMPLE])
+            .pl.colorize([COLORS[marker] for marker in state[Vars.CHANNELS]])
             ._plot.values
         )
         img = cv2.normalize(img, None, 255, 0, cv2.NORM_MINMAX, cv2.CV_8U)
@@ -255,7 +255,7 @@ else:
         classified = (
             filtered_data.pp.add_quantification(func=sp.arcsinh_median_intensity)
             .la.predict_cell_types_argmax(
-                dict(zip(state[Vars.CHANNEL], state[Vars.CHANNEL]))
+                dict(zip(state[Vars.CHANNELS], state[Vars.CHANNELS]))
             )
             .la.set_label_colors(list(COLORS.keys()), list(COLORS.values()))
         )
@@ -300,13 +300,13 @@ else:
                 image=[img],
                 x=[0],
                 y=[0],
-                dw=[downsample * img.shape[1]],
-                dh=[downsample * img.shape[0]],
+                dw=[state[Vars.DOWNSAMPLE] * img.shape[1]],
+                dh=[state[Vars.DOWNSAMPLE] * img.shape[0]],
             )
             p.x_range.range_padding = 0
             p.y_range.range_padding = 0
             p.toolbar.active_scroll = p.select_one(WheelZoomTool)
-            p.plot_height = height
+            p.plot_height = state[Vars.HEIGHT]
             st.bokeh_chart(p, use_container_width=True)
 
     with col2:
@@ -319,8 +319,8 @@ else:
                 image=[img],
                 x=[0],
                 y=[0],
-                dw=[downsample * img.shape[1]],
-                dh=[downsample * img.shape[0]],
+                dw=[state[Vars.DOWNSAMPLE] * img.shape[1]],
+                dh=[state[Vars.DOWNSAMPLE] * img.shape[0]],
             )
             p.x_range.range_padding = 0
             p.y_range.range_padding = 0
@@ -335,16 +335,16 @@ else:
                 p.circle(
                     x,
                     y,
-                    radius=radius,
+                    radius=state[Vars.RADIUS],
                     fill_color=c,
                     legend_label=n,
                     fill_alpha=0.0,
-                    line_width=linewidth,
+                    line_width=state[Vars.LINEWIDTH],
                     line_color=c,
                 )
 
                 # print(cell_id.item())
-            p.plot_height = height
+            p.plot_height = state[Vars.HEIGHT]
             st.bokeh_chart(p, use_container_width=True)
 
     dol1, dol2 = st.columns(2)
@@ -387,11 +387,11 @@ else:
                 p.circle(
                     x,
                     y,
-                    radius=radius,
+                    radius=state[Vars.RADIUS],
                     fill_color=c,
                     legend_label=n,
                     fill_alpha=1.0,
-                    line_width=linewidth,
+                    line_width=state[Vars.LINEWIDTH],
                     line_color=c,
                 )
 
