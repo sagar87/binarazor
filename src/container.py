@@ -193,7 +193,7 @@ def show_sample(
 
             # buttons
             with st.container(border=True):
-                but1, but2, but3, but4 = st.columns(4)
+                but1, but2, but3, but4, but5 = st.columns(5)
                 with but1:
                     st.button(
                         ":white_check_mark: Good",
@@ -269,3 +269,5 @@ def show_sample(
                         key=f"reset_{sample}_{channel}",
                         disabled=True if (status in ["not reviewed"]) else False,
                     )
+                with but5:
+                    st.subheader(f'{df.is_positive.sum()} / {df.shape[0]}' )
