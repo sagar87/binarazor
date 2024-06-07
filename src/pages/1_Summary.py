@@ -38,12 +38,7 @@ def get_overview(df):
 
 
 def get_threholds(df):
-    return (
-        df[df["status"] == "reviewed"]
-        .drop(["cells", "_id"], 1)
-        .to_csv(index=False)
-        .encode("utf-8")
-    )
+    return df.drop(["cells", "_id"], 1).to_csv(index=False).encode("utf-8")
 
 
 def get_cell_list(df):
