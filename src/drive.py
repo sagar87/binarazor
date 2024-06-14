@@ -38,6 +38,15 @@ def read_zarr_sample(filename, sample, downsample=App.DEFAULT_SCALE):
 
 
 @st.cache_data
+def read_zarr_channel(filename, sample):
+    store = s3fs.S3Map(root=filename, s3=fs, check=False)
+    zarr = xr.open_zarr(store=store, consolidated=True)
+    img = zarr.sel(channels=[sample])
+
+    return img
+
+
+@st.cache_data
 def read_zarr_full_sample(filename):
     store = s3fs.S3Map(root=filename, s3=fs, check=False)
     zarr = xr.open_zarr(store=store, consolidated=True)
