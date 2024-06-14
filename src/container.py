@@ -129,9 +129,6 @@ def show_sample(
             seg = read_zarr_channel(ZARR_DICT["segmentation"], sample)
             img = read_zarr_channel(ZARR_DICT[channel], sample)
 
-            # st.write(downsample)
-            # st.write(img._image.values[:30, :30])
-
             lower_value, upper_value, slider_value = get_slider_values(
                 img._image.values.squeeze(),
                 sample,
@@ -140,7 +137,6 @@ def show_sample(
                 global_upper,
                 global_slider,
             )
-            # slider
 
             with st.container(border=True):
                 sli1, sli2 = st.columns(2)
@@ -297,4 +293,6 @@ def show_sample(
                         disabled=True if (status in ["not reviewed"]) else False,
                     )
                 with but5:
-                    st.subheader(f"{df.is_positive.sum()} / {df.shape[0]} ({100 * df.is_positive.sum() / df.shape[0]:.2f} %)")
+                    st.subheader(
+                        f"{df.is_positive.sum()} / {df.shape[0]} ({100 * df.is_positive.sum() / df.shape[0]:.2f} %)"
+                    )
