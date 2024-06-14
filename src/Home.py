@@ -145,6 +145,7 @@ with st.container():
             state[Vars.SLIDER],
             state[Vars.POSITIVE],
             state[Vars.HEIGHT],
+            state[Vars.DOWNSAMPLE],
             show=show,
         )
 
@@ -170,9 +171,7 @@ with st.sidebar:
             horizontal=True
             # placeholder="Select status ...",
         )
-        # downsample = st.radio(
-        #         "Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True
-        #     )
+        _ = st.radio("Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True)
 
         _ = st.selectbox(
             "Select Reviewer",
