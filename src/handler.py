@@ -20,6 +20,8 @@ def handle_form():
     slider = state[Vars.SLIDER]
     positive = state[Vars.POSITIVE]
     status = state[Vars.STATUS]
+    downsample = state[Vars.DOWNSAMPLE]
+    height = state[Vars.HEIGHT]
 
     state[Vars._REVIEWER] = reviewer
     state[Vars.REVIEWER] = reviewer
@@ -38,6 +40,10 @@ def handle_form():
     state[Vars.UPPER_QUANTILE] = upper
     state[Vars._SLIDER] = slider
     state[Vars.SLIDER] = slider
+    state[Vars._DOWNSAMPLE] = downsample
+    state[Vars.DOWNSAMPLE] = downsample
+    state[Vars._HEIGHT] = height
+    state[Vars.HEIGHT] = height
     # st.toast(f"{state[Vars._STATUS]} {state[Vars.STATUS]}")
 
     num_samples = get_sample_status_num(
@@ -95,15 +101,18 @@ def decrement_value():
     )
 
 
-def handle_update(sample, channel, reviewer, threshold, lower, upper, cells, status):
+def handle_update(
+    sample, channel, reviewer, threshold, lower, upper, cells, status, toast=True
+):
     update_status(sample, channel, status, threshold, lower, upper, reviewer, cells)
 
-    st.toast(
-        f"{reviewer} annotated {sample} as {status}!"
-        if isinstance(status, str)
-        else f"Reseted {sample}!",
-        icon=f"{_get_icon(status, single_char=True)}",
-    )
+    if toast:
+        st.toast(
+            f"{reviewer} annotated {sample} as {status}!"
+            if isinstance(status, str)
+            else f"Reseted {sample}!",
+            icon=f"{_get_icon(status, single_char=True)}",
+        )
 
 
 def handle_page_change(page_size):

@@ -97,6 +97,16 @@ if Vars._SAMPLES not in state:
 
 state[Vars.SAMPLES] = state[Vars._SAMPLES]
 
+if Vars._DOWNSAMPLE not in state:
+    state[Vars._DOWNSAMPLE] = 2
+
+state[Vars.DOWNSAMPLE] = state[Vars._DOWNSAMPLE]
+
+
+if Vars._HEIGHT not in state:
+    state[Vars._HEIGHT] = 800
+
+state[Vars.HEIGHT] = state[Vars._HEIGHT]
 
 if App.ENV == "development":
     with st.container(border=False):
@@ -134,6 +144,8 @@ with st.container():
             state[Vars.UPPER_QUANTILE],
             state[Vars.SLIDER],
             state[Vars.POSITIVE],
+            state[Vars.HEIGHT],
+            state[Vars.DOWNSAMPLE],
             show=show,
         )
 
@@ -159,6 +171,8 @@ with st.sidebar:
             horizontal=True
             # placeholder="Select status ...",
         )
+        _ = st.radio("Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True)
+
         _ = st.selectbox(
             "Select Reviewer",
             REVIEWERS,
@@ -211,7 +225,7 @@ with st.sidebar:
                 step=0.01,
             )
 
-        dot_col1, dot_col2 = st.columns(2)
+        dot_col1, dot_col2, dot_col3 = st.columns(3)
         with dot_col1:
             _ = st.number_input(
                 "Dot size (-)",
@@ -229,6 +243,8 @@ with st.sidebar:
                 key=Vars.DOTSIZE_POS,
                 format="%d",
             )
+        with dot_col3:
+            _ = st.number_input("Height", min_value=0, max_value=1600, key=Vars.HEIGHT)
 
         st.form_submit_button(
             "Apply changes",

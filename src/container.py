@@ -1,4 +1,5 @@
 import numpy as np
+import spatialproteomics
 import streamlit as st
 
 from config import App
@@ -9,7 +10,7 @@ from database import (
     get_reviewer_stats,
     get_sample_expression,
 )
-from drive import get_zarr_dict, read_zarr_sample
+from drive import get_zarr_dict, read_zarr_channel
 from handler import handle_update
 from plots import bokeh_scatter
 from utils import _get_icon, merge_results, normalise_image, regionprops
@@ -90,6 +91,8 @@ def show_sample(
     global_upper,
     global_slider,
     positive,
+    height,
+    downsample,
     show="not reviewed",
 ):
     status = _get_status(sample, channel)
@@ -123,11 +126,19 @@ def show_sample(
 
     else:
         with st.expander(header_string, expand):
-            seg = read_zarr_sample(ZARR_DICT["segmentation"], sample)
-            img = read_zarr_sample(ZARR_DICT[channel], sample)
+            seg = read_zarr_channel(ZARR_DICT["segmentation"], sample)
+            img = read_zarr_channel(ZARR_DICT[channel], sample)
+
+            # st.write(downsample)
+            # st.write(img._image.values[:30, :30])
 
             lower_value, upper_value, slider_value = get_slider_values(
-                img, sample, channel, global_lower, global_upper, global_slider
+                img._image.values.squeeze(),
+                sample,
+                channel,
+                global_lower,
+                global_upper,
+                global_slider,
             )
             # slider
 
@@ -159,40 +170,57 @@ def show_sample(
 
             # images
             with st.container():
+                # st.write(img)
 
-                img_filtered = (img - lower).clip(min=0).astype("int32")
+                # img_filtered = (img - lower).clip(min=0).astype("int32")
+                img_filtered = img.pp.filter(intensity=lower)
+                # st.write(img_filtered._image.values)
 
                 col1, col2 = st.columns(2)
                 with col1:
                     with st.container(border=True):
-                        img_norm = normalise_image(img)
+                        img_norm = normalise_image(
+                            img.pp.downsample(downsample)._image.values.squeeze()
+                        )
                         st.image(
                             img_norm,
                             use_column_width=True,
                         )
                 # prepare bokeh plot
                 data = get_sample_expression(sample, channel, "CD3")
-                res = regionprops(seg, img_filtered, slider)
+                res = regionprops(
+                    seg._image.values.squeeze(),
+                    img_filtered._image.values.squeeze(),
+                    slider,
+                )
                 df = merge_results(data, res)
 
                 with col2:
                     with st.container(border=True):
                         img_norm = normalise_image(
-                            img_filtered,
+                            img_filtered.pp.downsample(
+                                downsample
+                            )._image.values.squeeze(),
                             lower=lower,
                             upper=upper,
                             func=lambda img, val: val,
                         )
                         st.bokeh_chart(
                             bokeh_scatter(
-                                df, img_norm, dotsize_pos, dotsize_neg, positive
+                                df,
+                                img_norm,
+                                height,
+                                dotsize_pos,
+                                dotsize_neg,
+                                positive,
+                                downsample,
                             ),
                             use_container_width=True,
                         )
 
             # buttons
             with st.container(border=True):
-                but1, but2, but3, but4 = st.columns(4)
+                but1, but2, but3, but4, but5 = st.columns(5)
                 with but1:
                     st.button(
                         ":white_check_mark: Good",
@@ -268,3 +296,5 @@ def show_sample(
                         key=f"reset_{sample}_{channel}",
                         disabled=True if (status in ["not reviewed"]) else False,
                     )
+                with but5:
+                    st.subheader(f"{df.is_positive.sum()} / {df.shape[0]}")

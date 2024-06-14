@@ -16,6 +16,7 @@ class Bucket:
     AWS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_KEY_SECRET = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_URL = os.getenv("AWS_URL")
+    MULTI_PATH = os.getenv("MULTI_PATH", "")
     AWS_PATH = os.getenv("AWS_PATH")
 
 
@@ -25,13 +26,14 @@ class App:
     PAGE_ICON = os.getenv("PAGE_ICON", "👋")
     DEFAULT_DOTSIZE_NEG = os.getenv("DEFAULT_DOTSIZE_NEG", 2)
     DEFAULT_DOTSIZE_POS = os.getenv("DEFAULT_DOTSIZE_POS", 5)
-    DEFAULT_PAGE_SIZE = int(os.getenv("DEFAULT_PAGE_SIZE", 30))
+    DEFAULT_PAGE_SIZE = int(os.getenv("DEFAULT_PAGE_SIZE", 15))
     DEFAULT_PAGE = int(os.getenv("DEFAULT_PAGE", 0))
     DEFAULT_SLIDER_VALUE = os.getenv("DEFAULT_SLIDER_VALUE", 0.5)
     DEFAULT_SLIDER_STEPSIZE = os.getenv("DEFAULT_SLIDER_STEPSIZE", 0.05)
     DEFAULT_UPPER_QUANTILE = os.getenv("DEFAULT_UPPER_QUANTILE", 0.998)
     DEFAULT_LOWER_QUANTILE = os.getenv("DEFAULT_LOWER_QUANTILE", 0.990)
     DEFAULT_SCALE = int(os.getenv("DEFAULT_SCALE", 8))
+    DOWNSAMPLE = [1, 2, 4, 8]
 
 
 class Vars:
@@ -51,6 +53,9 @@ class Vars:
     _SAMPLES = "_samples"
     SAMPLES = "samples"
 
+    _SAMPLE = "_sample"
+    SAMPLE = "sample"
+
     STATISTICS = "statistics"
 
     _LOWER_QUANTILE = "_lower_quantile"
@@ -59,6 +64,17 @@ class Vars:
     UPPER_QUANTILE = "upper_quantile"
     _SLIDER = "_slider"
     SLIDER = "slider"
+
+    _CHANNELS = "_channels"
+    CHANNELS = "channels"
+    _DOWNSAMPLE = "_downsample"
+    DOWNSAMPLE = "downsample"
+    _HEIGHT = "_height"
+    HEIGHT = "height"
+    _RADIUS = "_radius"
+    RADIUS = "radius"
+    _LINEWIDTH = "_linewidth"
+    LINEWIDTH = "linewidth"
 
     _STATUS = "_status"
     STATUS = "status"

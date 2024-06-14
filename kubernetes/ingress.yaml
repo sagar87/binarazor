@@ -7,7 +7,7 @@ metadata:
 spec:
   ingressClassName: internal-users
   rules:
-    - host: binarazor.embl.de
+    - host: triangle-binarazor.embl.de
       http:
         paths:
           - path: /
