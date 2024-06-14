@@ -98,7 +98,7 @@ if Vars._SAMPLES not in state:
 state[Vars.SAMPLES] = state[Vars._SAMPLES]
 
 if Vars._DOWNSAMPLE not in state:
-    state[Vars._DOWNSAMPLE] = 2
+    state[Vars._DOWNSAMPLE] = App.DEFAULT_SCALE
 
 state[Vars.DOWNSAMPLE] = state[Vars._DOWNSAMPLE]
 
