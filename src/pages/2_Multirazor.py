@@ -180,12 +180,12 @@ else:
 
     with st.sidebar:
         with st.form("settings"):
-            _ = st.selectbox("Select reviewer", REVIEWERS, key=Vars.REVIEWER)
-            _ = st.selectbox("Select sample", list(ZARR_DICT.keys()), key=Vars.SAMPLE)
-            _ = st.multiselect("Select channels", CHANNELS, key=Vars.CHANNELS)
             _ = st.radio(
                 "Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True
             )
+            _ = st.selectbox("Select reviewer", REVIEWERS, key=Vars.REVIEWER)
+            _ = st.selectbox("Select sample", list(ZARR_DICT.keys()), key=Vars.SAMPLE)
+            _ = st.multiselect("Select channels", CHANNELS, key=Vars.CHANNELS)
             c1, c2, c3 = st.columns(3)
             with c1:
                 _ = st.number_input(
