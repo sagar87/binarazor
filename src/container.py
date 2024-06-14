@@ -297,4 +297,4 @@ def show_sample(
                         disabled=True if (status in ["not reviewed"]) else False,
                     )
                 with but5:
-                    st.subheader(f"{df.is_positive.sum()} / {df.shape[0]}")
+                    st.subheader(f"{df.is_positive.sum()} / {df.shape[0]} ({100 * df.is_positive.sum() / df.shape[0]:.2f} %)")
