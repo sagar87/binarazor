@@ -14,7 +14,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import pandas as pd
 
 from container import show_full_channel_status, show_reviewer_stats
-from database import get_channels, get_thresholds_by_channel
+from database import get_channels, get_complete_thresholds, get_thresholds_by_channel
 from utils import _get_icon
 
 
@@ -37,8 +37,9 @@ def get_overview(df):
     return df.pivot(index="sample", columns="channel", values="status_new")
 
 
-def get_threholds(df):
-    return df.drop(["cells", "_id"], 1).to_csv(index=False).encode("utf-8")
+def get_threholds():
+    df = get_complete_thresholds()
+    return df.drop(["_id"], 1).to_csv(index=False).encode("utf-8")
 
 
 def get_cell_list(df):
@@ -53,7 +54,7 @@ def get_cell_list(df):
 
 df = get_data()
 overview = get_overview(df.copy())
-thresholds = get_threholds(df.copy())
+thresholds = get_threholds()
 cell_lists = get_cell_list(df.copy())
 
 st.header("Summary")
