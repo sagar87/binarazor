@@ -106,23 +106,49 @@ def show_sample(
 
     if not expand:
         with st.expander(header_string, expand):
+            lower_value = get_entry(sample, channel, "lower")
+            upper_value = get_entry(sample, channel, "upper")
+            slider_value = get_entry(sample, channel, "threshold")
+            # with st.container(border=True):
+            #     st.subheader(
+            #         f"Current thresholds {lower_value}, {upper_value}"
+            #     )
             with st.container():
-                st.button(
-                    ":face_with_monocle: Reset",
-                    on_click=handle_update,
-                    kwargs={
-                        "sample": sample,
-                        "channel": channel,
-                        "reviewer": float("nan"),
-                        "threshold": float("nan"),
-                        "lower": float("nan"),
-                        "upper": float("nan"),
-                        "cells": float("nan"),
-                        "status": float("nan"),
-                    },
-                    key=f"reset_{sample}_{channel}",
-                    disabled=True if (status in ["not reviewed"]) else False,
-                )
+                rcol1, rcol2 = st.columns(2)
+                with rcol1:
+                    st.button(
+                        ":face_with_monocle: Reset",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": channel,
+                            "reviewer": float("nan"),
+                            "threshold": slider_value,
+                            "lower": lower_value,
+                            "upper": upper_value,
+                            "cells": float("nan"),
+                            "status": float("nan"),
+                        },
+                        key=f"reset_{sample}_{channel}",
+                        disabled=True if (status in ["not reviewed"]) else False,
+                    )
+                with rcol2:
+                    st.button(
+                        ":bomb: Hard Reset",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": channel,
+                            "reviewer": float("nan"),
+                            "threshold": float("nan"),
+                            "lower": float("nan"),
+                            "upper": float("nan"),
+                            "cells": float("nan"),
+                            "status": float("nan"),
+                        },
+                        key=f"hard_{sample}_{channel}",
+                        disabled=True if (status in ["not reviewed"]) else False,
+                    )
 
     else:
         with st.expander(header_string, expand):
@@ -216,8 +242,8 @@ def show_sample(
 
             # buttons
             with st.container(border=True):
-                but1, but2, but3, but4, but5 = st.columns(5)
-                with but1:
+                but0, but1, but2, but3, but4, but5, but6 = st.columns(7)
+                with but0:
                     st.button(
                         ":white_check_mark: Good",
                         on_click=handle_update,
@@ -237,6 +263,26 @@ def show_sample(
                         else False,
                     )
 
+                with but1:
+                    st.button(
+                        ":sparkle: 0 cells",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": channel,
+                            "reviewer": reviewer,
+                            "threshold": 1.0,
+                            "lower": lower,
+                            "upper": upper,
+                            "cells": [],
+                            "status": "reviewed",
+                        },
+                        key=f"zero_{sample}_{channel}",
+                        disabled=True
+                        if (status in ["reviewed", "unsure", "bad"])
+                        else False,
+                    )
+
                 with but2:
                     st.button(
                         ":warning: Unsure",
@@ -245,10 +291,10 @@ def show_sample(
                             "sample": sample,
                             "channel": channel,
                             "reviewer": reviewer,
-                            "threshold": float("nan"),
-                            "lower": float("nan"),
-                            "upper": float("nan"),
-                            "cells": float("nan"),
+                            "threshold": slider,
+                            "lower": lower,
+                            "upper": upper,
+                            "cells": df[df.is_positive].label.tolist(),
                             "status": "unsure",
                         },
                         key=f"unsure_{sample}_{channel}",
@@ -283,16 +329,34 @@ def show_sample(
                             "sample": sample,
                             "channel": channel,
                             "reviewer": float("nan"),
-                            "threshold": float("nan"),
-                            "lower": float("nan"),
-                            "upper": float("nan"),
+                            "threshold": slider,
+                            "lower": lower,
+                            "upper": upper,
                             "cells": float("nan"),
                             "status": float("nan"),
                         },
                         key=f"reset_{sample}_{channel}",
                         disabled=True if (status in ["not reviewed"]) else False,
                     )
+
                 with but5:
+                    st.button(
+                        ":bomb: Hard Reset",
+                        on_click=handle_update,
+                        kwargs={
+                            "sample": sample,
+                            "channel": channel,
+                            "reviewer": float("nan"),
+                            "threshold": float("nan"),
+                            "lower": float("nan"),
+                            "upper": float("nan"),
+                            "cells": float("nan"),
+                            "status": float("nan"),
+                        },
+                        key=f"hard_reset_{sample}_{channel}",
+                        disabled=True if (status in ["not reviewed"]) else False,
+                    )
+                with but6:
                     st.subheader(
                         f"{df.is_positive.sum()} / {df.shape[0]} ({100 * df.is_positive.sum() / df.shape[0]:.2f} %)"
                     )
