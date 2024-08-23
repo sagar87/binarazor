@@ -78,18 +78,10 @@ if Vars._PAGE not in state:
 
 state[Vars.PAGE] = state[Vars._PAGE]
 
-
-if Vars._NUM_PAGES not in state:
-    state[Vars._NUM_PAGES] = ceil(state[Vars.NUM_SAMPLES] / App.DEFAULT_PAGE_SIZE)
-
-state[Vars.NUM_PAGES] = state[Vars._NUM_PAGES]
-
-
 if Vars._SAMPLE not in state:
     state[Vars._SAMPLE] = list(ZARR_DICT.keys())[0]
 
 state[Vars.SAMPLE] = state[Vars._SAMPLE]
-
 
 if Vars._DOWNSAMPLE not in state:
     state[Vars._DOWNSAMPLE] = App.DEFAULT_SCALE

@@ -23,6 +23,7 @@ def handle_single_form():
     downsample = state[Vars.DOWNSAMPLE]
     height = state[Vars.HEIGHT]
     sample = state[Vars.SAMPLE]
+    page_size = state[Vars.PAGE_SIZE]
 
     state[Vars._REVIEWER] = reviewer
     state[Vars.REVIEWER] = reviewer
@@ -47,6 +48,10 @@ def handle_single_form():
     state[Vars.HEIGHT] = height
     state[Vars._SAMPLE] = sample
     state[Vars.SAMPLE] = sample
+
+    state[Vars._PAGE_SIZE] = page_size
+    state[Vars.PAGE_SIZE] = page_size
+
     # st.toast(f"{state[Vars._STATUS]} {state[Vars.STATUS]}")
 
     num_samples = get_sample_status_num(
@@ -102,6 +107,7 @@ def handle_form():
     status = state[Vars.STATUS]
     downsample = state[Vars.DOWNSAMPLE]
     height = state[Vars.HEIGHT]
+    page_size = state[Vars.PAGE_SIZE]
 
     state[Vars._REVIEWER] = reviewer
     state[Vars.REVIEWER] = reviewer
@@ -126,10 +132,13 @@ def handle_form():
     state[Vars.HEIGHT] = height
     # st.toast(f"{state[Vars._STATUS]} {state[Vars.STATUS]}")
 
+    state[Vars._PAGE_SIZE] = page_size
+    state[Vars.PAGE_SIZE] = page_size
+
     num_samples = get_sample_status_num(
         channel, float("nan") if status == "not reviewed" else status
     )
-    num_pages = ceil(num_samples / App.DEFAULT_PAGE_SIZE)
+    num_pages = ceil(num_samples / state[Vars.PAGE_SIZE])
 
     if num_pages is None:
         num_pages = 0
@@ -152,7 +161,7 @@ def handle_form():
 
     samples = paginated_samples(
         page + 1,
-        App.DEFAULT_PAGE_SIZE,
+        state[Vars.PAGE_SIZE],
         channel=channel,
         status=float("nan") if status == "not reviewed" else status,
     )

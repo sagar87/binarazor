@@ -79,6 +79,9 @@ class Vars:
     _STATUS = "_status"
     STATUS = "status"
 
+    _PAGE_SIZE = "_page_size"
+    PAGE_SIZE = "page_size"
+
     _NUM_SAMPLES = "_num_samples"
     NUM_SAMPLES = "num_samples"
 

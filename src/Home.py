@@ -76,6 +76,12 @@ if Vars._NUM_SAMPLES not in state:
 
 state[Vars.NUM_SAMPLES] = state[Vars._NUM_SAMPLES]
 
+
+if Vars._PAGE_SIZE not in state:
+    state[Vars._PAGE_SIZE] = App.DEFAULT_PAGE_SIZE
+
+state[Vars.PAGE_SIZE] = state[Vars._PAGE_SIZE]
+
 if Vars._PAGE not in state:
     state[Vars._PAGE] = App.DEFAULT_PAGE
 
@@ -83,14 +89,14 @@ state[Vars.PAGE] = state[Vars._PAGE]
 
 
 if Vars._NUM_PAGES not in state:
-    state[Vars._NUM_PAGES] = ceil(state[Vars.NUM_SAMPLES] / App.DEFAULT_PAGE_SIZE)
+    state[Vars._NUM_PAGES] = ceil(state[Vars.NUM_SAMPLES] / state[Vars.PAGE_SIZE])
 
 state[Vars.NUM_PAGES] = state[Vars._NUM_PAGES]
 
 if Vars._SAMPLES not in state:
     state[Vars._SAMPLES] = paginated_samples(
         state[Vars._PAGE] + 1,
-        App.DEFAULT_PAGE_SIZE,
+        state[Vars.PAGE_SIZE],
         channel=state[Vars.CHANNEL],
         status=state[Vars.STATUS],
     )
@@ -171,7 +177,14 @@ with st.sidebar:
             horizontal=True
             # placeholder="Select status ...",
         )
+        # _ = st.radio("Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True)
         _ = st.radio("Downsample", App.DOWNSAMPLE, key=Vars.DOWNSAMPLE, horizontal=True)
+        _ = st.radio(
+            "Cores per page",
+            sorted([10, App.DEFAULT_PAGE_SIZE, 50, 100]),
+            key=Vars.PAGE_SIZE,
+            horizontal=True,
+        )
 
         _ = st.selectbox(
             "Select Reviewer",
