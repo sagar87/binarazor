@@ -66,6 +66,11 @@ if Vars._STATUS not in state:
 
 state[Vars.STATUS] = state[Vars._STATUS]
 
+if Vars._PAGE_SIZE not in state:
+    state[Vars._PAGE_SIZE] = App.DEFAULT_PAGE_SIZE
+
+state[Vars.PAGE_SIZE] = state[Vars._PAGE_SIZE]
+
 if Vars._NUM_SAMPLES not in state:
     state[Vars._NUM_SAMPLES] = get_sample_status_num(
         channel=state[Vars.CHANNEL], status=state[Vars.STATUS]
@@ -106,9 +111,7 @@ if App.ENV == "development":
 
 with st.container():
 
-    st.header(
-        f"Viewing channel {state[Vars.CHANNEL]} ({state[Vars.STATUS]}) | Page {state[Vars.PAGE] + 1} / {state[Vars.NUM_PAGES] + 1} "
-    )
+    st.header(f"Viewing channel {state[Vars.CHANNEL]} ({state[Vars.STATUS]})")
     st.subheader(
         "Use CMD/STRG + :heavy_plus_sign: / :heavy_minus_sign: to zoom in/out."
     )
