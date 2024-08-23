@@ -237,6 +237,10 @@ def get_sample_expression(sample, primary_channel, secondary_channel):
     return pd.DataFrame(data)
 
 
+def get_complete_thresholds():
+    return pd.DataFrame(thresholds.find())
+
+
 if __name__ == "__main__":
     import pdb
 
