@@ -33,6 +33,7 @@ class App:
     DEFAULT_UPPER_QUANTILE = os.getenv("DEFAULT_UPPER_QUANTILE", 0.998)
     DEFAULT_LOWER_QUANTILE = os.getenv("DEFAULT_LOWER_QUANTILE", 0.990)
     DEFAULT_SCALE = int(os.getenv("DEFAULT_SCALE", 1))
+    DEFAULT_DTYPE = int(os.getenv("DTYPE", 255))
     DOWNSAMPLE = [1, 2, 4, 8]
 
 

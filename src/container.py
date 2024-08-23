@@ -170,7 +170,7 @@ def show_sample(
                     lower, upper = st.slider(
                         "Select a values for filtering",
                         min_value=0.0,
-                        max_value=255.0,
+                        max_value=float(App.DEFAULT_DTYPE),
                         value=(
                             lower_value,
                             upper_value,
