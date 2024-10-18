@@ -4,7 +4,7 @@ import streamlit as st
 from streamlit import session_state as state
 
 from config import App, Vars
-from database import get_sample_status_num, paginated_samples, update_status
+from database import get_sample_status_num, paginated_samples, update_status, create_annotation
 from utils import _get_icon
 
 
@@ -193,7 +193,7 @@ def decrement_value():
 def handle_update(
     sample, channel, reviewer, threshold, lower, upper, cells, status, toast=True
 ):
-    update_status(sample, channel, status, threshold, lower, upper, reviewer, cells)
+    res = update_status(sample, channel, status, threshold, lower, upper, reviewer, cells)
 
     if toast:
         st.toast(
@@ -209,3 +209,13 @@ def handle_page_change(page_size):
     st.session_state.samples = paginated_samples(st.session_state.page + 1, page_size)
     # st.session_state.min_idx = st.session_state.page * st.session_state.size
     # st.session_state.max_idx = st.session_state.min_idx + st.session_state.size
+
+
+def handle_selection(sample, channel, reviewer, threshold, lower, upper, cells, status, toast=True):
+    res = create_annotation(sample, channel, status, threshold, lower, upper, reviewer, cells)
+
+    if toast:
+        st.toast(
+            f"{reviewer} annotated {status}!",
+            icon=f"🎉",
+        )
