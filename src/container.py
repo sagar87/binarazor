@@ -9,12 +9,15 @@ from database import (
     get_entry,
     get_reviewer_stats,
     get_sample_expression,
+    get_annotations,
+    update_status,
+    delete_annotation
 )
 from drive import get_zarr_dict, read_zarr_channel
-from handler import handle_update
+from handler import handle_update, handle_selection
 from plots import bokeh_scatter
 from utils import _get_icon, merge_results, normalise_image, regionprops
-
+from lasso import plotly_lasso
 ZARR_DICT = get_zarr_dict()
 
 
@@ -299,8 +302,8 @@ def show_sample(
                         },
                         key=f"unsure_{sample}_{channel}",
                         disabled=True
-                        if (status in ["reviewed", "unsure", "bad"])
-                        else False,
+                        # if (status in ["reviewed", "unsure", "bad"])
+                        # else False,
                     )
                 with but3:
                     st.button(
@@ -360,3 +363,149 @@ def show_sample(
                     st.subheader(
                         f"{df.is_positive.sum()} / {df.shape[0]} ({100 * df.is_positive.sum() / df.shape[0]:.2f} %)"
                     )
+
+
+@st.experimental_fragment
+def select_sample(
+    sample,
+    channel,
+    reviewer,
+    dotsize_pos,
+    dotsize_neg,
+    global_lower,
+    global_upper,
+    global_slider,
+    positive,
+    height,
+    downsample,
+    selection,
+    show="not reviewed",
+):
+    status = _get_status(sample, channel)
+    icon = _get_icon(status)
+    header_string = f"{icon} | {sample}"
+    
+
+
+    if status != "not reviewed":
+        header_string += f" | reviewed by {reviewer if status == 'not reviewed' else get_entry(sample, channel, 'reviewer')}"
+
+    expand = True 
+
+    with st.expander(header_string, expand):
+        seg = read_zarr_channel(ZARR_DICT["segmentation"], sample)
+        img = read_zarr_channel(ZARR_DICT[channel], sample)
+        res = get_annotations(sample)
+        # st.write(all_annot)
+
+        lower_value, upper_value, slider_value = get_slider_values(
+            img._image.values.squeeze(),
+            sample,
+            channel,
+            global_lower,
+            global_upper,
+            global_slider,
+        )
+
+        with st.container(border=True):
+            sli1, sli2 = st.columns(2)
+            with sli1:
+                lower, upper = st.slider(
+                    "Select a values for filtering",
+                    min_value=0.0,
+                    max_value=float(App.DEFAULT_DTYPE),
+                    value=(
+                        lower_value,
+                        upper_value,
+                    ),
+                    step=1.0,
+                    key=f"intensity_{sample}_{channel}",
+                    disabled=False if status == "not reviewed" else True,
+                )
+            with sli2:
+                slider = st.slider(
+                    "Select Threshold",
+                    min_value=0.0,
+                    max_value=1.0,
+                    value=slider_value,
+                    step=App.DEFAULT_SLIDER_STEPSIZE,
+                    key=f"threshold_{sample}_{channel}",
+                    disabled=False if status == "not reviewed" else True,
+                )
+
+        # images
+        with st.container():
+            img_filtered = img.pp.filter(intensity=lower)
+            with st.container(border=True):
+                
+                img_norm = normalise_image(
+                    img._image.values.squeeze()
+                )
+                fig = plotly_lasso(img_norm, height=height)
+                event_data = st.plotly_chart(
+                    fig,
+                    on_select='rerun', # do_function,
+                    selection_mode="lasso",
+                    config={"displayModeBar": False}
+                )
+
+                if event_data:
+                    if len(event_data["selection"]['lasso']) != 0:
+                        x = event_data["selection"]['lasso'][0]['x']
+                        y = event_data["selection"]['lasso'][0]['y']
+                        data = [ (x_i, y_i) for x_i, y_i in zip(x,y) ]
+                    else: 
+                        data = []
+                    
+        # buttons
+        with st.container(border=True):
+            but0, but1, but2 = st.columns(3)
+            with but0:
+                text_input = st.text_input(
+                "Enter some text 👇",
+                # label_visibility=st.session_state.visibility,
+                disabled=True if len(event_data["selection"]['lasso'] ) == 0  else False
+                # placeholder=st.session_state.placeholder,
+            )
+            with but1:
+                st.button(
+                    ":white_check_mark: Good",
+                    on_click=handle_selection,
+                    kwargs={
+                        "sample": sample,
+                        "channel": "ANNOTATION",
+                        "reviewer": reviewer,
+                        "threshold": float("nan"),
+                        "lower": float("nan"),
+                        "upper": float("nan"),
+                        "cells": data,
+                        "status": f"{text_input} | {channel}",
+                    },
+                    key=f"update_{sample}_{channel}",
+                    disabled=True if len(event_data["selection"]['lasso'] ) ==0 or len(text_input) == 0 else False
+                )
+
+            with but2:
+                st.subheader(
+                    f"{len(data)} dots"
+                )
+        
+        with st.container(border=True):            
+            if len(res) != 0:
+                for i, r in enumerate(res):
+                    col1, col2, col3, col4, col5 = st.columns((1, 2, 2, 1, 1))
+                    col1.write(r['status'])
+                    col2.write(r['reviewer'])
+                    col3.write(len(r['cells']))  # unique ID
+                    button_phold = col5.empty()  # create a placeholder
+                    do_action = button_phold.button(
+                        "Delete", 
+                        key=f'{sample}_delete_{i}',
+                        on_click=delete_annotation,
+                        kwargs={
+                            'sample': sample,
+                            'status': r['status']
+                        }
+                        
+                        )
+                    
