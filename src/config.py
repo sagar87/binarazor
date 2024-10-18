@@ -88,6 +88,9 @@ class Vars:
 
     _NUM_PAGES = "_NUM_PAGES"
     NUM_PAGES = "NUM_PAGES"
+    
+    _SELECTION = "_SELECTION"
+    SELECTION = "SELECTION"
 
     ALL = "all"
     BAD = "bad"
