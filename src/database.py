@@ -106,9 +106,15 @@ def get_thresholds(sample):
     data = list(query)
     return pd.DataFrame(data)
 
+def get_annotations(sample):
+    query = thresholds.find(
+        {"sample": sample, "channel": "ANNOTATION"}, {"_id": 0, "cells": 1, "status": 1, "reviewer": 1}
+    )
+    return list(query)
+
 
 def get_threshold(sample, channel):
-    query = thresholds.find_one(
+    query = thresholds.find_many(
         {"sample": sample, "channel": channel}, {"_id": 0, "threshold": 1}
     )
     return query["threshold"]
@@ -225,6 +231,24 @@ def update_status(sample, channel, status, threshold, lower, upper, reviewer, ce
     }
     res = thresholds.update_one({"_id": _id}, updates)
     return res
+        
+def create_annotation(sample, channel, status, threshold, lower, upper, reviewer, cells):
+
+    res = thresholds.insert_one({
+                "sample": sample,
+                "threshold": threshold,
+                "channel": channel,
+                "status": status,
+                "lower": lower,
+                "upper": upper,
+                "reviewer": reviewer,
+                "cells": cells,
+            })
+    
+def delete_annotation(sample, status):
+    myquery = { "sample": sample, "channel": "ANNOTATION", "status": status }
+    thresholds.delete_one(myquery)
+
 
 
 @st.cache_data(ttl=600)
