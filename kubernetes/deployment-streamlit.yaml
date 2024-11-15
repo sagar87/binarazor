@@ -27,6 +27,9 @@ spec:
             limits:
               cpu: "2000m"
               memory: "16Gi"
+          envFrom:
+            - secretRef:
+                name: binarazor-credentials
           env:
             - name: ENV
               value: "production"
@@ -91,7 +94,7 @@ kind: Service
 metadata:
   name: binarazor-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: binarazor
   ports:
