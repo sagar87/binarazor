@@ -17,7 +17,7 @@ from drive import get_zarr_dict, read_zarr_channel
 from handler import handle_update, handle_selection
 from plots import bokeh_scatter
 from utils import _get_icon, merge_results, normalise_image, regionprops
-from lasso import plotly_lasso
+from lasso import plotly_lasso, plotly_polygons
 ZARR_DICT = get_zarr_dict()
 
 
@@ -396,7 +396,7 @@ def select_sample(
         seg = read_zarr_channel(ZARR_DICT["segmentation"], sample)
         img = read_zarr_channel(ZARR_DICT[channel], sample)
         res = get_annotations(sample)
-        # st.write(all_annot)
+        # st.write(res)
 
         lower_value, upper_value, slider_value = get_slider_values(
             img._image.values.squeeze(),
@@ -436,26 +436,39 @@ def select_sample(
         # images
         with st.container():
             img_filtered = img.pp.filter(intensity=lower)
-            with st.container(border=True):
-                
-                img_norm = normalise_image(
-                    img._image.values.squeeze()
-                )
-                fig = plotly_lasso(img_norm, height=height)
-                event_data = st.plotly_chart(
-                    fig,
-                    on_select='rerun', # do_function,
-                    selection_mode="lasso",
-                    config={"displayModeBar": False}
-                )
+            selection_col, view_col =  st.columns(2)
+            img_norm = normalise_image(
+                img._image.values.squeeze()
+            )
+            with selection_col:
+                with st.container(border=True):
+                    
+                    fig = plotly_lasso(img_norm, height=height)
+                    event_data = st.plotly_chart(
+                        fig,
+                        on_select='rerun', # do_function,
+                        selection_mode="lasso",
+                        config={"displayModeBar": False}
+                    )
 
-                if event_data:
-                    if len(event_data["selection"]['lasso']) != 0:
-                        x = event_data["selection"]['lasso'][0]['x']
-                        y = event_data["selection"]['lasso'][0]['y']
-                        data = [ (x_i, y_i) for x_i, y_i in zip(x,y) ]
-                    else: 
-                        data = []
+                    if event_data:
+                        if len(event_data["selection"]['lasso']) != 0:
+                            x = event_data["selection"]['lasso'][0]['x']
+                            y = event_data["selection"]['lasso'][0]['y']
+                            data = [ (x_i, y_i) for x_i, y_i in zip(x,y) ]
+                        else: 
+                            data = []
+            with view_col:
+                with st.container(border=True):
+                    # st.write ("Here comes the sun")                    
+                    fig_poly = plotly_polygons(img_norm, height, res)
+                    _ = st.plotly_chart(
+                        fig_poly,
+                        # on_select='rerun', # do_function,
+                        # selection_mode="lasso",
+                        config={"displayModeBar": False}
+                    )                    
+
                     
         # buttons
         with st.container(border=True):
