@@ -3,9 +3,9 @@
 # CHANGE AWS_URL in secrets.yaml
 # CHANGE PROJECT in secrets.yaml
 
-NAMESPACE=valerkri-binarazor
-THRESHOLDS="~/Downloads/valerkri_thresholds_sprot.csv"
-EXPRESSION="~/Downloads/valerkri_expression_sprot.csv"
+NAMESPACE=chapuy-binarazor
+THRESHOLDS="~/Downloads/chapuy_thresholds.csv"
+EXPRESSION="~/Downloads/chapuy_expression_sprot.csv"
 
 # CHANGE PORT FOR MONGO EXPRESS: mongo_express.yaml
 # CHANGE AWS_URL in secrets.yaml
